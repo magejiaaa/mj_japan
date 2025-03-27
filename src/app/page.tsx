@@ -1,103 +1,221 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react"
+import Header from "@/components/header"
+import ExchangeRate from "@/components/exchange-rate"
+import ProductForm from "@/components/product-form"
+import CalculationResult from "@/components/calculation-result"
+import CategoryModal from "@/components/category-modal"
+import Footer from "@/components/footer"
+import { ThemeProvider } from "@/components/theme-provider"
+import type { ProductItem, CalculationSummary } from "@/lib/types"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [exchangeRate, setExchangeRate] = useState<number>(0.22)
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [products, setProducts] = useState<ProductItem[]>([
+    {
+      id: "1",
+      url: "",
+      store: "amazon",
+      price: 0,
+      quantity: 1,
+      category: "clothing",
+    },
+  ])
+  const [summary, setSummary] = useState<CalculationSummary>({
+    totalJPY: 0,
+    totalTWD: 0,
+    totalDomesticShippingJPY: 0,
+    totalDomesticShippingTWD: 0,
+    totalInternationalShipping: 0,
+    serviceFee: 0,
+    grandTotal: 0,
+  })
+  const [darkMode, setDarkMode] = useState<boolean>(false)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // 獲取匯率
+  const fetchExchangeRate = async () => {
+    try {
+      // 在實際應用中，您會從真實的API獲取
+      // 為了演示目的，我們將模擬一個帶有輕微隨機變化的獲取
+      const newRate = 0.22
+      setExchangeRate(Number.parseFloat(newRate.toFixed(4)))
+      setLastUpdated(new Date())
+    } catch (error) {
+      console.error("無法獲取匯率:", error)
+    }
+  }
+
+  // 當產品或匯率變化時計算總額
+  useEffect(() => {
+    calculateTotals()
+  }, [products, exchangeRate])
+
+  // 初始獲取匯率
+  useEffect(() => {
+    fetchExchangeRate()
+    // 檢查保存的深色模式偏好
+    const savedDarkMode = localStorage.getItem("darkMode") === "true"
+    setDarkMode(savedDarkMode)
+  }, [])
+
+  // 當深色模式變化時更新localStorage
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode.toString())
+  }, [darkMode])
+
+  // 修改 calculateTotals 函數，使同一店家的運費只計算一次
+  const calculateTotals = () => {
+    let totalJPY = 0
+    let totalDomesticShippingJPY = 0
+    let totalInternationalShipping = 0
+
+    // 用於追踪已計算運費的店家
+    const processedStores = new Set<string>()
+
+    products.forEach((product) => {
+      totalJPY += product.price * product.quantity
+
+      // 計算日本國內運費（日幣）- 每個店家只計算一次
+      if (!processedStores.has(product.store)) {
+        let domesticShippingFee = 0
+        switch (product.store) {
+          case "amazon":
+            domesticShippingFee = 500
+            break
+          case "rakuten":
+            domesticShippingFee = 600
+            break
+          case "yahoo":
+            domesticShippingFee = 550
+            break
+          case "mercari":
+            domesticShippingFee = 700
+            break
+          default:
+            domesticShippingFee = 800
+        }
+
+        totalDomesticShippingJPY += domesticShippingFee
+        processedStores.add(product.store)
+      }
+
+      // 計算國際運費（台幣）- 每件商品都要計算
+      let internationalShippingPerItem = 0
+      switch (product.category) {
+        case "clothing":
+          internationalShippingPerItem = 100
+          break
+        case "shoes":
+          internationalShippingPerItem = 200
+          break
+        case "books":
+          internationalShippingPerItem = 300
+          break
+        case "electronics":
+          internationalShippingPerItem = 200
+          break
+        case "cosmetics":
+          internationalShippingPerItem = 60
+          break
+        default:
+          internationalShippingPerItem = 200
+      }
+
+      totalInternationalShipping += internationalShippingPerItem * product.quantity
+    })
+
+    const totalTWD = totalJPY * exchangeRate
+    const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
+    const serviceFee = totalJPY * 0.08 * exchangeRate // 8% 服務費
+    const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping + serviceFee
+
+    setSummary({
+      totalJPY,
+      totalTWD,
+      totalDomesticShippingJPY,
+      totalDomesticShippingTWD,
+      totalInternationalShipping,
+      serviceFee,
+      grandTotal,
+    })
+  }
+
+  const handleAddProduct = () => {
+    setProducts([
+      ...products,
+      {
+        id: Date.now().toString(),
+        url: "",
+        store: "amazon",
+        price: 0,
+        quantity: 1,
+        category: "clothing",
+      },
+    ])
+  }
+
+  const handleRemoveProduct = (id: string) => {
+    if (products.length > 1) {
+      setProducts(products.filter((product) => product.id !== id))
+    }
+  }
+
+  const handleProductChange = (updatedProduct: ProductItem) => {
+    setProducts(products.map((product) => (product.id === updatedProduct.id ? updatedProduct : product)))
+  }
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+  }
+
+  const openCategoryModal = () => {
+    setIsCategoryModalOpen(true)
+  }
+
+  const closeCategoryModal = () => {
+    setIsCategoryModalOpen(false)
+  }
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
+      <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
+        <div className="min-h-screen bg-[#FADCD9] dark:bg-[#3D2A2D] text-[#F8F0E3]">
+          <div className="container mx-auto px-4 py-8">
+            <Header toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
+
+            <main className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <ExchangeRate
+                  rate={exchangeRate}
+                  lastUpdated={lastUpdated}
+                  onRefresh={fetchExchangeRate}
+                  onRateChange={setExchangeRate}
+                />
+
+                <ProductForm
+                  products={products}
+                  onAddProduct={handleAddProduct}
+                  onRemoveProduct={handleRemoveProduct}
+                  onProductChange={handleProductChange}
+                  onOpenCategoryModal={openCategoryModal}
+                />
+              </div>
+
+              <div>
+                <CalculationResult products={products} summary={summary} exchangeRate={exchangeRate} />
+              </div>
+            </main>
+
+            <Footer />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+
+        <CategoryModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} darkMode={darkMode} />
+      </div>
+    </ThemeProvider>
+  )
 }
+
