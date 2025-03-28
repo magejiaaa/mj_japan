@@ -70,7 +70,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
               className="w-24 bg-[#F9F5EB] dark:bg-[#3D2A2D] text-black dark:text-white"
             />
           ) : (
-            <div className="text-xl font-bold">{rate.toFixed(4)} 台幣</div>
+            <div className="text-xl font-bold">{rate.toFixed(2)} 台幣</div>
           )}
           <Button
             variant="outline"

@@ -13,7 +13,8 @@ export interface CalculationSummary {
   totalDomesticShippingJPY: number
   totalDomesticShippingTWD: number
   totalInternationalShipping: number
-  serviceFee: number
+  shopeePrice: number
+  otherPlatformPrice: number
   grandTotal: number
 }
 

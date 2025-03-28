@@ -15,11 +15,12 @@ export default function StoreSelector({ id, value, onChange }: StoreSelectorProp
         <SelectValue placeholder="選擇店家" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="amazon">Amazon Japan (500日幣/件)</SelectItem>
-        <SelectItem value="rakuten">樂天 Rakuten (600日幣/件)</SelectItem>
-        <SelectItem value="yahoo">Yahoo Japan (550日幣/件)</SelectItem>
-        <SelectItem value="mercari">Mercari (700日幣/件)</SelectItem>
-        <SelectItem value="other">其他 (800日幣/件)</SelectItem>
+        <SelectItem value="free">免運費</SelectItem>
+        <SelectItem value="GRL">GRL (通常免運)</SelectItem>
+        <SelectItem value="ZOZOTOWN">ZOZOTOWN (660日幣)</SelectItem>
+        <SelectItem value="yahoo">Yahoo Japan (550日幣)</SelectItem>
+        <SelectItem value="mercari">Mercari (700日幣)</SelectItem>
+        <SelectItem value="other">其他 (800日幣)</SelectItem>
       </SelectContent>
     </Select>
   )

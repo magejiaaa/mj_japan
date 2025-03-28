@@ -35,10 +35,12 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
 
   const getStoreName = (store: string) => {
     switch (store) {
-      case "amazon":
-        return "Amazon Japan"
-      case "rakuten":
-        return "樂天 Rakuten"
+      case "free":
+        return "免運費"
+      case "GRL":
+        return "GRL"
+      case "ZOZOTOWN":
+        return "ZOZOTOWN"
       case "yahoo":
         return "Yahoo Japan"
       case "mercari":
@@ -50,10 +52,12 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
 
   const getDomesticShippingFee = (store: string) => {
     switch (store) {
-      case "amazon":
-        return 500
-      case "rakuten":
-        return 600
+      case "free":
+        return 0
+      case "GRL":
+        return 0
+      case "ZOZOTOWN":
+        return 660
       case "yahoo":
         return 550
       case "mercari":
@@ -105,7 +109,7 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
         text += `   價格: ${formatCurrency(product.price, "JPY")} (${formatCurrency(twdPrice, "TWD")})\n`
         text += `   類別: ${categoryInfo.name}\n`
         text += `   數量: ${product.quantity}\n`
-        text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n\n`
+        text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
       }
     })
 
@@ -124,8 +128,9 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
     text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")} (${formatCurrency(summary.totalTWD, "TWD")})\n`
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-    text += `服務費 (8%): ${formatCurrency(summary.serviceFee, "TWD")}\n`
     text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n`
+    text += `蝦皮價格 (含手續費): ${formatCurrency(summary.shopeePrice, "TWD")}\n`
+    text += `其他平台下單費用: ${formatCurrency(summary.otherPlatformPrice, "TWD")}\n`
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
@@ -211,13 +216,17 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
                 <span>國際運費 (台幣):</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
               </div>
-              <div className="flex justify-between">
-                <span>服務費 (8%):</span>
-                <span>{formatCurrency(summary.serviceFee, "TWD")}</span>
-              </div>
               <div className="flex justify-between font-bold pt-2 border-t border-[#F8F0E3]/20">
                 <span>總計:</span>
                 <span>{formatCurrency(summary.grandTotal, "TWD")}</span>
+              </div>
+              <div className="flex justify-between mt-4 pt-2 border-t border-[#F8F0E3]/20">
+                <span>蝦皮價格 (含手續費):</span>
+                <span>{formatCurrency(summary.shopeePrice, "TWD")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>其他平台下單費用:</span>
+                <span>{formatCurrency(summary.otherPlatformPrice, "TWD")}</span>
               </div>
             </div>
           </div>

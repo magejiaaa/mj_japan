@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
+  title: '秘境自助報價',
   description: 'Created with v0',
-  generator: 'v0.dev',
+  generator: '秘境日本代購',
 }
 
 export default function RootLayout({
