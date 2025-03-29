@@ -42,10 +42,10 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
   }
 
   return (
-    <Card className="bg-[#F5B5B5] dark:bg-[#4D3A3D] border-none shadow-md">
+    <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex justify-between items-center">
-          <span>當前匯率</span>
+          <span>當前匯率 🇯🇵</span>
           <Button
             variant="ghost"
             size="icon"

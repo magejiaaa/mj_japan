@@ -22,7 +22,7 @@ export default function ProductForm({
   onOpenCategoryModal,
 }: ProductFormProps) {
   return (
-    <Card className="bg-[#F5B5B5] dark:bg-[#4D3A3D] border-none shadow-md">
+    <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex justify-between items-center">
           <span>商品項目</span>
@@ -37,7 +37,7 @@ export default function ProductForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+        <div className="space-y-4 max-h-[400px] overflow-y-auto">
           {products.map((product) => (
             <ProductItem
               key={product.id}

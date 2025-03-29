@@ -5,6 +5,7 @@ export interface ProductItem {
   price: number
   quantity: number
   category: string
+  color: string
 }
 
 export interface CalculationSummary {
@@ -16,5 +17,6 @@ export interface CalculationSummary {
   shopeePrice: number
   otherPlatformPrice: number
   grandTotal: number
+  selectedPlatform: "shopee" | "other"
 }
 

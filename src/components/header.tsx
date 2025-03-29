@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Sun, Leaf, Star } from "lucide-react"
+import { Moon, Sun, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface HeaderProps {
@@ -12,9 +12,6 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
   return (
     <header className="flex flex-col items-center justify-center text-center">
       <div className="relative w-full flex justify-center">
-        <Leaf className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F8F0E3] opacity-70" />
-        <Star className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F8F0E3] opacity-70" />
-
         <div className="absolute right-0 top-1/2 -translate-y-1/2">
           <Button
             variant="ghost"
@@ -35,7 +32,7 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
             <Star className="absolute -top-4 -right-6 w-4 h-4 text-[#F8F0E3] opacity-70" />
           </span>
         </h1>
-        <p className="text-lg mt-1 opacity-90">好物分享</p>
+        <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
       </div>
 
       <div className="w-24 h-1 bg-[#F8F0E3]/30 rounded-full mt-2"></div>

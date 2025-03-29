@@ -7,12 +7,16 @@ interface ShippingBreakdownProps {
   domesticShippingJPY: number
   domesticShippingTWD: number
   internationalShipping: number
+  store: string
+  storeTotal: number
 }
 
 export default function ShippingBreakdown({
   domesticShippingJPY,
   domesticShippingTWD,
   internationalShipping,
+  store,
+  storeTotal,
 }: ShippingBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -24,6 +28,22 @@ export default function ShippingBreakdown({
       maximumFractionDigits: 0,
     }).format(amount)
   }
+
+  // 判断是否免运费并获取原因
+  const getFreeShippingReason = () => {
+    if (domesticShippingJPY === 0) {
+      if (store === "ROJITA" && storeTotal >= 10000) {
+        return "已達ROJITA滿10,000日幣免運標準"
+      } else if (store === "rakuten" && storeTotal >= 4900) {
+        return "已達樂天滿4,900日幣免運標準"
+      } else if (store === "free") {
+        return "免日方運費"
+      }
+    }
+    return null
+  }
+
+  const freeShippingReason = getFreeShippingReason()
 
   return (
     <div className="mt-2 text-sm text-black dark:text-white">
@@ -47,7 +67,14 @@ export default function ShippingBreakdown({
               {formatCurrency(domesticShippingJPY, "JPY")} ({formatCurrency(domesticShippingTWD, "TWD")})
             </span>
           </div>
-          <div className="text-black/50 dark:text-white/50 text-[10px] italic">*同一店家只計算一次運費</div>
+          {/* 显示免运费原因 */}
+          {freeShippingReason && (
+            <div className="text-green-600 dark:text-green-400 text-[10px] italic">*{freeShippingReason}</div>
+          )}
+
+          {!freeShippingReason && store !== "free" && (
+            <div className="text-black/50 dark:text-white/50 text-[10px] italic">*同一店家只計算一次運費</div>
+          )}
           <div className="flex justify-between">
             <span className="text-black/60 dark:text-white/60">國際運費:</span>
             <span>{formatCurrency(internationalShipping, "TWD")}</span>
@@ -55,6 +82,12 @@ export default function ShippingBreakdown({
           <div className="flex justify-between font-medium pt-1">
             <span className="text-black/80 dark:text-white/80">運費總計:</span>
             <span>{formatCurrency(domesticShippingTWD + internationalShipping, "TWD")}</span>
+          </div>
+
+          {/* 显示店家商品总额 */}
+          <div className="flex justify-between pt-1 text-black/60 dark:text-white/60">
+            <span>店家商品總額:</span>
+            <span>{formatCurrency(storeTotal, "JPY")}</span>
           </div>
         </div>
       )}

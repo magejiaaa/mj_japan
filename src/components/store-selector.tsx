@@ -18,8 +18,8 @@ export default function StoreSelector({ id, value, onChange }: StoreSelectorProp
         <SelectItem value="free">免運費</SelectItem>
         <SelectItem value="GRL">GRL (通常免運)</SelectItem>
         <SelectItem value="ZOZOTOWN">ZOZOTOWN (660日幣)</SelectItem>
-        <SelectItem value="yahoo">Yahoo Japan (550日幣)</SelectItem>
-        <SelectItem value="mercari">Mercari (700日幣)</SelectItem>
+        <SelectItem value="ROJITA">ROJITA (650日幣)</SelectItem>
+        <SelectItem value="axesFemme">axes femme (410日幣)</SelectItem>
         <SelectItem value="other">其他 (800日幣)</SelectItem>
       </SelectContent>
     </Select>

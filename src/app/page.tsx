@@ -7,8 +7,10 @@ import ProductForm from "@/components/product-form"
 import CalculationResult from "@/components/calculation-result"
 import CategoryModal from "@/components/category-modal"
 import Footer from "@/components/footer"
+import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
+import { Instagram, Facebook } from "lucide-react"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
@@ -17,7 +19,8 @@ export default function Home() {
     {
       id: "1",
       url: "",
-      store: "amazon",
+      color: "",
+      store: "GRL",
       price: 0,
       quantity: 1,
       category: "clothing",
@@ -33,6 +36,7 @@ export default function Home() {
     shopeePrice: 0,
     otherPlatformPrice: 0,
     grandTotal: 0,
+    selectedPlatform: "shopee", // 默认选择蝦皮
   })
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
@@ -47,7 +51,7 @@ export default function Home() {
         new URLSearchParams({
           dataset: 'TaiwanExchangeRate',
           data_id: 'JPY',
-          start_date: '2024-03-01'
+          start_date: '2025-03-01'
         })
       )
       
@@ -75,7 +79,7 @@ export default function Home() {
   // 當產品或匯率變化時計算總額
   useEffect(() => {
     calculateTotals()
-  }, [products, exchangeRate])
+  }, [products, exchangeRate, summary.selectedPlatform])
 
   // 初始獲取匯率
   useEffect(() => {
@@ -91,22 +95,40 @@ export default function Home() {
     localStorage.setItem("darkMode", darkMode.toString())
   }, [darkMode])
 
-  // 修改 calculateTotals 函数，移除服务费计算，添加新的价格计算
+  // 修改 calculateTotals 函数，添加免运费判断
   const calculateTotals = () => {
     let totalJPY = 0
     let totalDomesticShippingJPY = 0
     let totalInternationalShipping = 0
 
-    // 用於追踪已計算運費的店家
-    const processedStores = new Set<string>()
+    // 用於追踪已計算運費的店家和每个店家的总金额
+    const processedStores = new Map<string, number>()
 
+    // 首先计算每个店家的总金额
     products.forEach((product) => {
-      totalJPY += product.price * product.quantity
+      const productTotal = product.price * product.quantity
+      totalJPY += productTotal
 
-      // 計算日本國內運費（日幣）- 每個店家只計算一次
-      if (!processedStores.has(product.store)) {
-        let domesticShippingFee = 0
-        switch (product.store) {
+      // 累计每个店家的总金额
+      if (processedStores.has(product.store)) {
+        processedStores.set(product.store, processedStores.get(product.store)! + productTotal)
+      } else {
+        processedStores.set(product.store, productTotal)
+      }
+    })
+
+    // 然后根据每个店家的总金额判断是否免运费
+    processedStores.forEach((storeTotal, store) => {
+      let domesticShippingFee = 0
+
+      // 判断是否达到免运费标准
+      const isAmazonFreeShipping = store === "amazon" && storeTotal >= 10000
+      const isRakutenFreeShipping = store === "rakuten" && storeTotal >= 4900
+
+      if (store === "free" || isAmazonFreeShipping || isRakutenFreeShipping) {
+        domesticShippingFee = 0
+      } else {
+        switch (store) {
           case "free":
             domesticShippingFee = 0
             break
@@ -116,21 +138,22 @@ export default function Home() {
           case "ZOZOTOWN":
             domesticShippingFee = 660
             break
-          case "yahoo":
-            domesticShippingFee = 550
+          case "ROJITA":
+            domesticShippingFee = 650
             break
-          case "mercari":
-            domesticShippingFee = 700
+          case "axesFemme":
+            domesticShippingFee = 410
             break
           default:
             domesticShippingFee = 800
         }
-
-        totalDomesticShippingJPY += domesticShippingFee
-        processedStores.add(product.store)
       }
 
-      // 計算國際運費（台幣）- 每件商品都要計算
+      totalDomesticShippingJPY += domesticShippingFee
+    })
+
+    // 計算國際運費（台幣）- 每件商品都要計算
+    products.forEach((product) => {
       let internationalShippingPerItem = 0
       switch (product.category) {
         case "clothing":
@@ -175,6 +198,7 @@ export default function Home() {
       shopeePrice,
       otherPlatformPrice,
       grandTotal,
+      selectedPlatform: summary.selectedPlatform,
     })
   }
 
@@ -184,7 +208,8 @@ export default function Home() {
       {
         id: Date.now().toString(),
         url: "",
-        store: "amazon",
+        color: "",
+        store: "GRL",
         price: 0,
         quantity: 1,
         category: "clothing",
@@ -202,6 +227,13 @@ export default function Home() {
     setProducts(products.map((product) => (product.id === updatedProduct.id ? updatedProduct : product)))
   }
 
+  const handlePlatformChange = (platform: "shopee" | "other") => {
+    setSummary({
+      ...summary,
+      selectedPlatform: platform,
+    })
+  }
+
   const toggleDarkMode = () => {
     setDarkMode(!darkMode)
   }
@@ -217,7 +249,7 @@ export default function Home() {
   return (
     <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
       <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
-        <div className="min-h-screen bg-[#FADCD9] dark:bg-[#3D2A2D] text-[#F8F0E3]">
+        <div className="min-h-screen bg-[#F5B5B5] dark:bg-[#3D2A2D] text-[#F8F0E3]">
           <div className="container mx-auto px-4 py-8">
             <Header toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
 
@@ -237,10 +269,27 @@ export default function Home() {
                   onProductChange={handleProductChange}
                   onOpenCategoryModal={openCategoryModal}
                 />
+
+                <PlatformSelector selectedPlatform={summary.selectedPlatform} onPlatformChange={handlePlatformChange} />
               </div>
 
               <div>
-                <CalculationResult products={products} summary={summary} exchangeRate={exchangeRate} />
+                <CalculationResult
+                  products={products}
+                  summary={summary}
+                  exchangeRate={exchangeRate}
+                  storeAmounts={getStoreAmounts(products)}
+                />
+                
+                <div className="flex justify-center items-center gap-2 mt-8">
+                  <p>複製後傳送至</p>
+                  <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md px-3 border border-[#F8F0E3] hover:bg-[#F8C7CC]">
+                    <Instagram />Instagram
+                  </a>
+                  <a href="https://www.facebook.com/mjJapan/" target="_blank" className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md px-3 border border-[#F8F0E3] hover:bg-[#F8C7CC]">
+                    <Facebook />Facebook
+                  </a>
+                </div>
               </div>
             </main>
 
@@ -252,5 +301,21 @@ export default function Home() {
       </div>
     </ThemeProvider>
   )
+
+  // 辅助函数：获取每个店家的总金额
+  function getStoreAmounts(products: ProductItem[]): Map<string, number> {
+    const storeAmounts = new Map<string, number>()
+
+    products.forEach((product) => {
+      const amount = product.price * product.quantity
+      if (storeAmounts.has(product.store)) {
+        storeAmounts.set(product.store, storeAmounts.get(product.store)! + amount)
+      } else {
+        storeAmounts.set(product.store, amount)
+      }
+    })
+
+    return storeAmounts
+  }
 }
 

@@ -18,5 +18,6 @@
         "titleBar.inactiveBackground": "#fadcd999",
         "titleBar.inactiveForeground": "#15202b99"
     },
-    "peacock.color": "#FADCD9"
+    "peacock.color": "#FADCD9",
+    "svn.ignoreMissingSvnWarning": true
 }

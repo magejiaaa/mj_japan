@@ -11,9 +11,10 @@ interface CalculationResultProps {
   products: ProductItem[]
   summary: CalculationSummary
   exchangeRate: number
+  storeAmounts: Map<string, number>
 }
 
-export default function CalculationResult({ products, summary, exchangeRate }: CalculationResultProps) {
+export default function CalculationResult({ products, summary, exchangeRate, storeAmounts }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
 
   const getCategoryInfo = (category: string) => {
@@ -41,16 +42,23 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
         return "GRL"
       case "ZOZOTOWN":
         return "ZOZOTOWN"
-      case "yahoo":
-        return "Yahoo Japan"
-      case "mercari":
-        return "Mercari"
+      case "ROJITA":
+        return "ROJITA"
+      case "axesFemme":
+        return "axes femme"
       default:
         return "其他"
     }
   }
 
-  const getDomesticShippingFee = (store: string) => {
+  const getDomesticShippingFee = (store: string, storeTotal: number) => {
+    // 判断是否达到免运费标准
+    const isAmazonFreeShipping = store === "ROJITA" && storeTotal >= 10000
+    const isRakutenFreeShipping = store === "rakuten" && storeTotal >= 4900
+
+    if (store === "free" || isAmazonFreeShipping || isRakutenFreeShipping) {
+      return 0
+    }
     switch (store) {
       case "free":
         return 0
@@ -58,10 +66,10 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
         return 0
       case "ZOZOTOWN":
         return 660
-      case "yahoo":
-        return 550
-      case "mercari":
-        return 700
+      case "ROJITA":
+        return 650
+      case "axesFemme":
+        return 410
       default:
         return 800
     }
@@ -81,9 +89,11 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
 
     // 添加匯率信息
     text += `匯率: 1 日幣 = ${exchangeRate.toFixed(4)} 台幣\n\n`
+    // 添加选择的平台信息
+    text += `下單平台: ${summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}\n\n`
 
     // 用於追踪已計算運費的店家
-    const processedStores = new Map<string, { fee: number; products: string[] }>()
+    const processedStores = new Map<string, { fee: number; products: string[]; total: number }>()
 
     // 添加產品詳情
     text += "商品:\n"
@@ -97,16 +107,21 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
         // 收集每個店家的商品
         if (!processedStores.has(product.store)) {
           processedStores.set(product.store, {
-            fee: getDomesticShippingFee(product.store),
+            fee: getDomesticShippingFee(product.store, storeAmounts.get(product.store) || 0),
             products: [`商品 #${index + 1}`],
+            total: product.price * product.quantity,
           })
         } else {
-          processedStores.get(product.store)?.products.push(`商品 #${index + 1}`)
+          const storeInfo = processedStores.get(product.store)!
+          storeInfo.products.push(`商品 #${index + 1}`)
+          storeInfo.total += product.price * product.quantity
+          processedStores.set(product.store, storeInfo)
         }
 
         text += `${index + 1}. ${product.url || "[未提供網址]"}\n`
         text += `   店家: ${storeName}\n`
         text += `   價格: ${formatCurrency(product.price, "JPY")} (${formatCurrency(twdPrice, "TWD")})\n`
+        text += `   顏色尺寸: ${product.color}\n`
         text += `   類別: ${categoryInfo.name}\n`
         text += `   數量: ${product.quantity}\n`
         text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
@@ -114,12 +129,27 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
     })
 
     // 添加店家運費信息
-    text += "店家運費:\n"
+    text += "\n店家運費:\n"
     processedStores.forEach((info, store) => {
       const storeName = getStoreName(store)
       const domesticFee = info.fee
       const domesticFeeTWD = domesticFee * exchangeRate
+      const storeTotal = info.total
+
       text += `${storeName}: ${formatCurrency(domesticFee, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
+
+      // 如果是免运费，添加说明
+      if (domesticFee === 0) {
+        if (store === "ROJITA" && storeTotal >= 10000) {
+          text += `   已達ROJITA滿10,000日幣免運標準\n`
+        } else if (store === "rakuten" && storeTotal >= 4900) {
+          text += `   已達樂天滿4,900日幣免運標準\n`
+        } else if (store === "free") {
+          text += `   免日方運費\n`
+        }
+      }
+
+      text += `   店家商品總額: ${formatCurrency(storeTotal, "JPY")}\n`
       text += `   包含商品: ${info.products.join(", ")}\n\n`
     })
 
@@ -132,6 +162,11 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
     text += `蝦皮價格 (含手續費): ${formatCurrency(summary.shopeePrice, "TWD")}\n`
     text += `其他平台下單費用: ${formatCurrency(summary.otherPlatformPrice, "TWD")}\n`
 
+    // 添加选择的平台的最终价格
+    const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
+
+    text += `【${summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}】最終價格: ${formatCurrency(finalPrice, "TWD")}\n`
+
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -139,7 +174,7 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
   }
 
   return (
-    <Card className="bg-[#F5B5B5] dark:bg-[#4D3A3D] border-none shadow-md">
+    <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">計算結果</CardTitle>
       </CardHeader>
@@ -152,7 +187,8 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
 
               const categoryInfo = getCategoryInfo(product.category)
               const storeName = getStoreName(product.store)
-              const domesticShippingFee = getDomesticShippingFee(product.store)
+              const storeTotal = storeAmounts.get(product.store) || 0
+              const domesticShippingFee = getDomesticShippingFee(product.store, storeTotal)
               const twdPrice = product.price * exchangeRate
               const domesticShippingTWD = domesticShippingFee * exchangeRate
               const internationalShippingFee = categoryInfo.fee * product.quantity
@@ -181,12 +217,17 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
                     <div>
                       <span className="text-black/60 dark:text-white/60">數量:</span> {product.quantity}
                     </div>
+                    <div>
+                      <span className="text-black/60 dark:text-white/60">顏色尺寸:</span> {product.color}
+                    </div>
                   </div>
 
                   <ShippingBreakdown
-                    domesticShippingJPY={domesticShippingFee * product.quantity}
-                    domesticShippingTWD={domesticShippingTWD * product.quantity}
+                    domesticShippingJPY={domesticShippingFee}
+                    domesticShippingTWD={domesticShippingTWD}
                     internationalShipping={internationalShippingFee}
+                    store={product.store}
+                    storeTotal={storeTotal}
                   />
                 </div>
               )
@@ -209,10 +250,6 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
                 <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
               </div>
               <div className="flex justify-between">
-                <span>日本國內運費 (台幣):</span>
-                <span>{formatCurrency(summary.totalDomesticShippingTWD, "TWD")}</span>
-              </div>
-              <div className="flex justify-between">
                 <span>國際運費 (台幣):</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
               </div>
@@ -220,13 +257,26 @@ export default function CalculationResult({ products, summary, exchangeRate }: C
                 <span>總計:</span>
                 <span>{formatCurrency(summary.grandTotal, "TWD")}</span>
               </div>
-              <div className="flex justify-between mt-4 pt-2 border-t border-[#F8F0E3]/20">
-                <span>蝦皮價格 (含手續費):</span>
-                <span>{formatCurrency(summary.shopeePrice, "TWD")}</span>
+              {/* 显示两个平台的价格 */}
+              <div className="mt-4 pt-2 border-t border-[#F8F0E3]/20">
+                <div className="flex justify-between items-center">
+                  <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>蝦皮價格 (含手續費):</span>
+                  <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>
+                    {formatCurrency(summary.shopeePrice, "TWD")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className={summary.selectedPlatform === "other" ? "font-bold" : ""}>其他平台下單費用:</span>
+                  <span className={summary.selectedPlatform === "other" ? "font-bold" : ""}>
+                    {formatCurrency(summary.otherPlatformPrice, "TWD")}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>其他平台下單費用:</span>
-                <span>{formatCurrency(summary.otherPlatformPrice, "TWD")}</span>
+
+              {/* 显示选择的平台 */}
+              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#F5B5B5] dark:text-[#F9F5EB]">
+                <span>選擇下單平台:</span>
+                <span>{summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}</span>
               </div>
             </div>
           </div>

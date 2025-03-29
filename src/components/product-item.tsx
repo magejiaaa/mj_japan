@@ -45,6 +45,17 @@ export default function ProductItem({
               onChange={(e) => handleChange("url", e.target.value)}
               className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white"
             />
+            <label htmlFor={`url-${product.id}`} className="block text-xs font-medium text-black dark:text-white mb-1 mt-2">
+              顏色尺寸
+            </label>
+            <Input
+              id={`color-${product.id}`}
+              type="text"
+              placeholder="請輸入顏色尺寸"
+              value={product.color}
+              onChange={(e) => handleChange("color", e.target.value)}
+              className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white"
+            />
           </div>
 
           <div>
