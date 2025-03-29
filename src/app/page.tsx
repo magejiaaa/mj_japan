@@ -11,6 +11,7 @@ import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { Instagram, Facebook } from "lucide-react"
+import { log } from "console"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
@@ -122,7 +123,7 @@ export default function Home() {
       let domesticShippingFee = 0
 
       // 判断是否达到免运费标准
-      const isAmazonFreeShipping = store === "amazon" && storeTotal >= 10000
+      const isAmazonFreeShipping = store === "ROJITA" && storeTotal >= 10000
       const isRakutenFreeShipping = store === "rakuten" && storeTotal >= 4900
 
       if (store === "free" || isAmazonFreeShipping || isRakutenFreeShipping) {
@@ -150,8 +151,10 @@ export default function Home() {
       }
 
       totalDomesticShippingJPY += domesticShippingFee
+      
     })
 
+    console.log(totalDomesticShippingJPY);
     // 計算國際運費（台幣）- 每件商品都要計算
     products.forEach((product) => {
       let internationalShippingPerItem = 0

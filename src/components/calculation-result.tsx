@@ -249,6 +249,9 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                 <span>日本國內運費 (日幣):</span>
                 <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
               </div>
+              {summary.totalDomesticShippingJPY === 0 && (
+                <div className="text-green-600 dark:text-green-400 text-xs italic">*全部店家已達免運標準</div>
+              )}
               <div className="flex justify-between">
                 <span>國際運費 (台幣):</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
