@@ -29,22 +29,6 @@ export default function ShippingBreakdown({
     }).format(amount)
   }
 
-  // 判断是否免运费并获取原因
-  const getFreeShippingReason = () => {
-    if (domesticShippingJPY === 0) {
-      if (store === "ROJITA" && storeTotal >= 10000) {
-        return "已達ROJITA滿10,000日幣免運標準"
-      } else if (store === "rakuten" && storeTotal >= 4900) {
-        return "已達樂天滿4,900日幣免運標準"
-      } else if (store === "free") {
-        return "免日方運費"
-      }
-    }
-    return null
-  }
-
-  const freeShippingReason = getFreeShippingReason()
-
   return (
     <div className="mt-2 text-sm text-black dark:text-white">
       <button
@@ -67,12 +51,8 @@ export default function ShippingBreakdown({
               {formatCurrency(domesticShippingJPY, "JPY")} ({formatCurrency(domesticShippingTWD, "TWD")})
             </span>
           </div>
-          {/* 显示免运费原因 */}
-          {freeShippingReason && (
-            <div className="text-green-600 dark:text-green-400 text-[10px] italic">*{freeShippingReason}</div>
-          )}
 
-          {!freeShippingReason && store !== "free" && (
+          {store !== "free" && (
             <div className="text-black/50 dark:text-white/50 text-[10px] italic">*同一店家只計算一次運費</div>
           )}
           <div className="flex justify-between">

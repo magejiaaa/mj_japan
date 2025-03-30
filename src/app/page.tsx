@@ -11,7 +11,7 @@ import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { Instagram, Facebook } from "lucide-react"
-import { log } from "console"
+import { storeShippingConfig } from "@/lib/storeShippingConfig"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
@@ -96,7 +96,6 @@ export default function Home() {
     localStorage.setItem("darkMode", darkMode.toString())
   }, [darkMode])
 
-  // 修改 calculateTotals 函数，添加免运费判断
   const calculateTotals = () => {
     let totalJPY = 0
     let totalDomesticShippingJPY = 0
@@ -117,44 +116,18 @@ export default function Home() {
         processedStores.set(product.store, productTotal)
       }
     })
-
+    
+    // 判斷是否免運費的輔助函數
+    const isFreeShipping = (store: string, storeTotal: number): boolean => {
+      const config = storeShippingConfig[store] || storeShippingConfig.default
+      return storeTotal >= config.freeThreshold
+    }
     // 然后根据每个店家的总金额判断是否免运费
     processedStores.forEach((storeTotal, store) => {
-      let domesticShippingFee = 0
-
-      // 判断是否达到免运费标准
-      const isAmazonFreeShipping = store === "ROJITA" && storeTotal >= 10000
-      const isRakutenFreeShipping = store === "rakuten" && storeTotal >= 4900
-
-      if (store === "free" || isAmazonFreeShipping || isRakutenFreeShipping) {
-        domesticShippingFee = 0
-      } else {
-        switch (store) {
-          case "free":
-            domesticShippingFee = 0
-            break
-          case "GRL":
-            domesticShippingFee = 0
-            break
-          case "ZOZOTOWN":
-            domesticShippingFee = 660
-            break
-          case "ROJITA":
-            domesticShippingFee = 650
-            break
-          case "axesFemme":
-            domesticShippingFee = 410
-            break
-          default:
-            domesticShippingFee = 800
-        }
-      }
-
-      totalDomesticShippingJPY += domesticShippingFee
-      
+      const config = storeShippingConfig[store] || storeShippingConfig.default
+      totalDomesticShippingJPY += isFreeShipping(store, storeTotal) ? 0 : config.fee
     })
 
-    console.log(totalDomesticShippingJPY);
     // 計算國際運費（台幣）- 每件商品都要計算
     products.forEach((product) => {
       let internationalShippingPerItem = 0

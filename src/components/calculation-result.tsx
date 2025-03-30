@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { useState } from "react"
 import ShippingBreakdown from "@/components/shipping-breakdown"
+import { storeShippingConfig } from "@/lib/storeShippingConfig"
 
 interface CalculationResultProps {
   products: ProductItem[]
@@ -46,34 +47,21 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         return "ROJITA"
       case "axesFemme":
         return "axes femme"
+      case "amavel":
+        return "Amavel"
+      case "dreamvs":
+        return "夢展望"
+      case "INGNI":
+        return "INGNI"
       default:
         return "其他"
     }
   }
 
   const getDomesticShippingFee = (store: string, storeTotal: number) => {
-    // 判断是否达到免运费标准
-    const isAmazonFreeShipping = store === "ROJITA" && storeTotal >= 10000
-    const isRakutenFreeShipping = store === "rakuten" && storeTotal >= 4900
-
-    if (store === "free" || isAmazonFreeShipping || isRakutenFreeShipping) {
-      return 0
-    }
-    switch (store) {
-      case "free":
-        return 0
-      case "GRL":
-        return 0
-      case "ZOZOTOWN":
-        return 660
-      case "ROJITA":
-        return 650
-      case "axesFemme":
-        return 410
-      default:
-        return 800
-    }
-  }
+    const config = storeShippingConfig[store] || storeShippingConfig.default;
+    return storeTotal >= config.freeThreshold ? 0 : config.fee;
+  };
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("zh-TW", {
