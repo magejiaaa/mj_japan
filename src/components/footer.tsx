@@ -4,9 +4,9 @@ export default function Footer() {
   return (
     <footer className="mt-12 py-6 text-center text-sm bg-[#c76a6a3b] rounded-lg">
       <div className="text-[#FFF] mt-2 text-left">
-        <div className="w-2/3 mx-auto">
+        <div className="w-full px-4 md:w-2/3 mx-auto">
           <h2 className="text-center text-lg my-2 font-bold">代購流程</h2>
-          <ul className="grid grid-cols-5 gap-6 list-decimal pl-4">
+          <ul className="grid grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 list-decimal pl-4">
             <li><NotebookPen className="mx-auto w-10 h-10 mb-2" />填寫下方表單，盡量填寫完整，避免多次來回耽誤您的時間</li>
             <li><Copy className="mx-auto w-10 h-10 mb-2" />點擊右側計算結果最下方「一鍵複製」</li>
             <li><Send className="mx-auto w-10 h-10 mb-2" />將訊息傳送至我們的 IG 或 FB</li>
