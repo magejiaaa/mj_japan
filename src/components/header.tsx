@@ -26,13 +26,15 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
       </div>
 
       <div className="mt-4 mb-2">
-        <h1 className="text-4xl font-bold tracking-tight">
-          <span className="relative">
-            秘境
-            <Star className="absolute -top-4 -right-6 w-4 h-4 text-[#F8F0E3] opacity-70" />
-          </span>
-        </h1>
-        <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
+        <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer">
+          <h1 className="text-4xl font-bold tracking-tight">
+            <span className="relative">
+              秘境
+              <Star className="absolute -top-4 -right-6 w-4 h-4 text-[#F8F0E3] opacity-70" />
+            </span>
+          </h1>
+          <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
+        </a>
       </div>
 
       <div className="w-24 h-1 bg-[#F8F0E3]/30 rounded-full mt-2"></div>

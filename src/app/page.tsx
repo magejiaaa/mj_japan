@@ -21,7 +21,7 @@ export default function Home() {
       id: "1",
       url: "",
       color: "",
-      store: "GRL",
+      store: "free",
       price: 0,
       quantity: 1,
       category: "clothing",
@@ -135,17 +135,20 @@ export default function Home() {
         case "clothing":
           internationalShippingPerItem = 100
           break
-        case "shoes":
+        case "coat":
           internationalShippingPerItem = 200
           break
-        case "books":
+        case "jeans":
           internationalShippingPerItem = 300
           break
-        case "electronics":
-          internationalShippingPerItem = 200
+        case "shoes":
+          internationalShippingPerItem = 400
           break
-        case "cosmetics":
-          internationalShippingPerItem = 60
+        case "shortBoots":
+          internationalShippingPerItem = 500
+          break
+        case "longBoots":
+          internationalShippingPerItem = 600
           break
         default:
           internationalShippingPerItem = 200

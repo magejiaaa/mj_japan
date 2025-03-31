@@ -7,5 +7,11 @@ export const storeShippingConfig: Record<string, { fee: number; freeThreshold: n
     amavel: { fee: 715, freeThreshold: 10000 },
     dreamvs: { fee: 580, freeThreshold: 8000 },
     INGNI: { fee: 550, freeThreshold: 4900 },
-    default: { fee: 800, freeThreshold: Infinity },
+    classicalElf: { fee: 0, freeThreshold: 0 },
+    runway: { fee: 330, freeThreshold: Infinity },
+    ACDC: { fee: 590, freeThreshold: 5500 },
+    dotST: { fee: 385, freeThreshold: 5000 },
+    stripe: { fee: 600, freeThreshold: 6000 },
+    canshop: { fee: 880, freeThreshold: 6000 },
+    default: { fee: 660, freeThreshold: Infinity },
 };

@@ -49,45 +49,52 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
   const categories = [
     {
       id: "clothing",
-      name: "衣物",
-      description: "包括上衣、褲子、裙子、外套等各種服裝。重量約0.5kg，國際運費為100元/件。",
-      examples: ["T恤", "襯衫", "連衣裙", "牛仔褲", "外套"],
-      image: "/placeholder.svg?height=200&width=300",
+      name: "薄款上下著",
+      description: "一般棉質或雪紡上下著基本上都可以選，薄長袖也包含在內，牛仔裙、厚棉長袖上衣除外。重量約0.5kg，國際運費為100元/件。",
+      examples: ["短袖T恤", "短裙", "薄長裙", "長袖襯衫", "長裙", "短裙", "透膚外搭"],
+      image: "/clothing.png",
+    },
+    {
+      id: "coat",
+      name: "厚上衣、洋裝",
+      description: "長袖外套、長袖針織、厚棉長袖上衣跟毛衣基本上都屬於此類，大部分洋裝也是，除了少數比較重工的洋裝外。有些比較輕的鞋子，比如芭蕾舞鞋。重量約1kg，國際運費為200元/雙。",
+      examples: ["長袖外套", "厚棉長袖上衣", "針織", "毛衣", "洋裝", "涼鞋", "拖鞋"],
+      image: "/coat.png",
+    },
+    {
+      id: "jeans",
+      name: "牛仔系列",
+      description: "牛仔長褲、外套為此類，短裙或布料較少的衣服可以選1kg的。重量約1.5kg，國際運費為300元/本。",
+      examples: ["牛仔褲", "牛仔外套"],
+      image: "/jeans.png",
     },
     {
       id: "shoes",
-      name: "鞋類",
-      description: "包括各種鞋子，如運動鞋、皮鞋、靴子等。重量約1kg，國際運費為200元/雙。",
-      examples: ["運動鞋", "皮鞋", "靴子", "涼鞋", "拖鞋"],
-      image: "/placeholder.svg?height=200&width=300",
+      name: "鞋子",
+      description: "5cm跟以內的鞋子。重量約2kg，國際運費為400元/件。",
+      examples: ["樂福鞋", "娃娃鞋", "厚底鞋", "鬆糕鞋", "跟鞋"],
+      image: "/shoes.png",
     },
     {
-      id: "books",
-      name: "書籍",
-      description: "包括書籍、雜誌、漫畫等印刷品。重量約1.5kg，國際運費為300元/本。",
-      examples: ["小說", "漫畫", "雜誌", "教科書", "藝術書"],
-      image: "/placeholder.svg?height=200&width=300",
+      id: "shortBoots",
+      name: "短靴",
+      description: "包括厚底鞋，5cm以上10cm以下跟鞋，底跟與筒長相加20cm以下。視鞋盒大小有可能會去掉鞋盒運送。重量約2.5kg，國際運費為500元/件。",
+      examples: ["厚底鞋", "短靴"],
+      image: "/shortBoots.png",
     },
     {
-      id: "electronics",
-      name: "電子產品",
-      description: "包括各種電子設備和配件。重量約1kg，國際運費為200元/件。",
-      examples: ["耳機", "手機配件", "相機配件", "小型電器", "充電器"],
-      image: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: "cosmetics",
-      name: "化妝品",
-      description: "包括各種美妝產品和護膚品。重量約0.3kg，國際運費為60元/件。",
-      examples: ["面霜", "精華液", "面膜", "彩妝品", "香水"],
-      image: "/placeholder.svg?height=200&width=300",
+      id: "longBoots",
+      name: "長靴",
+      description: "膝蓋附近的靴子、底跟與筒長相加20cm以上。視鞋盒大小有可能會去掉鞋盒運送。重量約3kg，國際運費為600元/件。",
+      examples: ["長筒靴", "超厚底鞋"],
+      image: "/longBoots.png",
     },
     {
       id: "other",
       name: "其他",
-      description: "不屬於上述類別的其他商品。重量約1kg，國際運費為200元/件。",
+      description: "不屬於上述類別的其他商品。重量1kg國際運費為200元。運費會依照實際重量計算，多退少補。",
       examples: ["玩具", "文具", "家居用品", "飾品", "紀念品"],
-      image: "/placeholder.svg?height=200&width=300",
+      image: "/other.jpg",
     },
   ]
 
@@ -113,7 +120,7 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
 
         <div className="p-4">
           <Tabs defaultValue="clothing" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4 bg-[#F5B5B5]/30 dark:bg-[#4D3A3D]">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4 bg-[#F5B5B5]/30 dark:bg-[#4D3A3D] h-auto">
               {categories.map((category) => (
                 <TabsTrigger
                   key={category.id}
@@ -143,28 +150,32 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
                         重量:{" "}
                         {category.id === "clothing"
                           ? "0.5kg"
-                          : category.id === "shoes"
+                          : category.id === "coat"
                             ? "1kg"
-                            : category.id === "books"
+                            : category.id === "jeans"
                               ? "1.5kg"
-                              : category.id === "electronics"
-                                ? "1kg"
-                                : category.id === "cosmetics"
-                                  ? "0.3kg"
+                              : category.id === "shoes"
+                                ? "2kg"
+                                : category.id === "shortBoots"
+                                  ? "2.5kg"
+                                  : category.id === "longBoots"
+                                    ? "3kg"
                                   : "1kg"}
                       </p>
                       <p>
                         國際運費:{" "}
                         {category.id === "clothing"
                           ? "100"
-                          : category.id === "shoes"
+                          : category.id === "coat"
                             ? "200"
-                            : category.id === "books"
+                            : category.id === "jeans"
                               ? "300"
-                              : category.id === "electronics"
-                                ? "200"
-                                : category.id === "cosmetics"
-                                  ? "60"
+                              : category.id === "shoes"
+                                ? "400"
+                                : category.id === "shortBoots"
+                                  ? "500"
+                                  : category.id === "longBoots"
+                                    ? "600"
                                   : "200"}{" "}
                         元/件
                       </p>

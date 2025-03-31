@@ -21,17 +21,19 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
   const getCategoryInfo = (category: string) => {
     switch (category) {
       case "clothing":
-        return { weight: "0.5kg", fee: 100, name: "衣物" }
+        return { weight: "0.5kg", fee: 100, name: "薄款上下著" }
+      case "coat":
+        return { weight: "1kg", fee: 200, name: "厚上衣、洋裝" }
+      case "jeans":
+        return { weight: "1.5kg", fee: 300, name: "牛仔系列" }
       case "shoes":
-        return { weight: "1kg", fee: 200, name: "鞋類" }
-      case "books":
-        return { weight: "1.5kg", fee: 300, name: "書籍" }
-      case "electronics":
-        return { weight: "1kg", fee: 200, name: "電子產品" }
-      case "cosmetics":
-        return { weight: "0.3kg", fee: 60, name: "化妝品" }
+        return { weight: "2kg", fee: 400, name: "鞋子" }
+      case "shortBoots":
+        return { weight: "2.5kg", fee: 500, name: "短靴" }
+      case "longBoots":
+        return { weight: "3kg", fee: 600, name: "長靴" }
       default:
-        return { weight: "1kg", fee: 200, name: "其他" }
+        return { weight: "1kg", fee: 200, name: "其他、文具" }
     }
   }
 
@@ -53,6 +55,18 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         return "夢展望"
       case "INGNI":
         return "INGNI"
+      case "classicalElf":
+        return "Classical Elf"
+      case "runway":
+        return "Runway Channel"
+      case "ACDC":
+        return "ACDC RAG"
+      case "dotST":
+        return "dot-st"
+      case "stripe":
+        return "stripe club"
+      case "canshop":
+        return "canshop"
       default:
         return "其他"
     }
@@ -72,13 +86,25 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     }).format(amount)
   }
 
+  const getShopName = (store: string) => {
+    switch (store) {
+      case "shopee":
+        return "蝦皮"
+      case "myship":
+        return "賣貨便"
+      case "iopen":
+        return "iopen mall"
+      default:
+        return "其他平台"
+    }
+  }
   const copyToClipboard = () => {
     let text = "===== 秘境好物分享訂單 =====\n\n"
 
     // 添加匯率信息
     text += `匯率: 1 日幣 = ${exchangeRate.toFixed(4)} 台幣\n\n`
     // 添加选择的平台信息
-    text += `下單平台: ${summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}\n\n`
+    text += `下單平台: ${getShopName(summary.selectedPlatform)}\n`
 
     // 用於追踪已計算運費的店家
     const processedStores = new Map<string, { fee: number; products: string[]; total: number }>()
@@ -126,17 +152,6 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
 
       text += `${storeName}: ${formatCurrency(domesticFee, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
 
-      // 如果是免运费，添加说明
-      if (domesticFee === 0) {
-        if (store === "ROJITA" && storeTotal >= 10000) {
-          text += `   已達ROJITA滿10,000日幣免運標準\n`
-        } else if (store === "rakuten" && storeTotal >= 4900) {
-          text += `   已達樂天滿4,900日幣免運標準\n`
-        } else if (store === "free") {
-          text += `   免日方運費\n`
-        }
-      }
-
       text += `   店家商品總額: ${formatCurrency(storeTotal, "JPY")}\n`
       text += `   包含商品: ${info.products.join(", ")}\n\n`
     })
@@ -148,7 +163,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
     text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n`
     text += `蝦皮價格 (含手續費): ${formatCurrency(summary.shopeePrice, "TWD")}\n`
-    text += `其他平台下單費用: ${formatCurrency(summary.otherPlatformPrice, "TWD")}\n`
+    text += `賣貨便、iopen下單費用: ${formatCurrency(summary.otherPlatformPrice, "TWD")}\n`
 
     // 添加选择的平台的最终价格
     const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
@@ -244,30 +259,29 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                 <span>國際運費 (台幣):</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
               </div>
-              <div className="flex justify-between font-bold pt-2 border-t border-[#F8F0E3]/20">
-                <span>總計:</span>
+              <div className="flex justify-between">
+                <span>商品本體總計:</span>
                 <span>{formatCurrency(summary.grandTotal, "TWD")}</span>
               </div>
               {/* 显示两个平台的价格 */}
-              <div className="mt-4 pt-2 border-t border-[#F8F0E3]/20">
-                <div className="flex justify-between items-center">
-                  <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>蝦皮價格 (含手續費):</span>
-                  <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>
-                    {formatCurrency(summary.shopeePrice, "TWD")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className={summary.selectedPlatform === "other" ? "font-bold" : ""}>其他平台下單費用:</span>
-                  <span className={summary.selectedPlatform === "other" ? "font-bold" : ""}>
-                    {formatCurrency(summary.otherPlatformPrice, "TWD")}
-                  </span>
-                </div>
+              <h3 className="font-medium mt-4 mb-3 border-t border-[#F8F0E3]/20 pt-2">含稅下單價格 <span className="text-xs text-black/60 dark:text-white/60">包含營業稅、關稅與包材費用</span></h3>
+              <div className="flex justify-between items-center">
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>蝦皮價格 (含手續費):</span>
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>
+                  {formatCurrency(summary.shopeePrice, "TWD")}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>賣貨便、iopen下單費用:</span>
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>
+                  {formatCurrency(summary.otherPlatformPrice, "TWD")}
+                </span>
               </div>
 
               {/* 显示选择的平台 */}
-              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#F5B5B5] dark:text-[#F9F5EB]">
+              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#ff7070] dark:text-[#F9F5EB]">
                 <span>選擇下單平台:</span>
-                <span>{summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}</span>
+                <span>{getShopName(summary.selectedPlatform)}</span>
               </div>
             </div>
           </div>

@@ -124,7 +124,7 @@ export default function ProductItem({
                   size="icon"
                   type="button"
                   onClick={onOpenCategoryModal}
-                  className="h-4 w-4 p-0 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-transparent"
+                  className="h-4 w-4 p-0 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-transparent mb-1"
                 >
                   <HelpCircle className="h-3 w-3" />
                   <span className="sr-only">查看類別範例</span>
@@ -138,12 +138,13 @@ export default function ProductItem({
                   <SelectValue placeholder="選擇類別" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="clothing">衣物</SelectItem>
-                  <SelectItem value="shoes">鞋類</SelectItem>
-                  <SelectItem value="books">書籍</SelectItem>
-                  <SelectItem value="electronics">電子產品</SelectItem>
-                  <SelectItem value="cosmetics">化妝品</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
+                  <SelectItem value="clothing">薄款上下著</SelectItem>
+                  <SelectItem value="coat">厚上衣、洋裝</SelectItem>
+                  <SelectItem value="jeans">牛仔系列</SelectItem>
+                  <SelectItem value="shoes">鞋子</SelectItem>
+                  <SelectItem value="shortBoots">短靴</SelectItem>
+                  <SelectItem value="longBoots">長靴</SelectItem>
+                  <SelectItem value="other">其他、文具</SelectItem>
                 </SelectContent>
               </Select>
             </div>

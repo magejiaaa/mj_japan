@@ -23,7 +23,13 @@ export default function StoreSelector({ id, value, onChange }: StoreSelectorProp
         <SelectItem value="amavel">Amavel (未滿¥10000｜715日幣)</SelectItem>
         <SelectItem value="dreamvs">夢展望 (未滿¥8000｜580日幣)</SelectItem>
         <SelectItem value="INGNI">INGNI (未滿¥4900｜550日幣)</SelectItem>
-        <SelectItem value="other">其他 (800日幣)</SelectItem>
+        <SelectItem value="classicalElf">Classical Elf (免運)</SelectItem>
+        <SelectItem value="runway">Runway Channel (330日幣)</SelectItem>
+        <SelectItem value="ACDC">ACDC RAG (未滿¥5500｜590日幣)</SelectItem>
+        <SelectItem value="dotST">dot-st (未滿¥5000｜385日幣)</SelectItem>
+        <SelectItem value="stripe">stripe club (未滿¥6000｜600日幣)</SelectItem>
+        <SelectItem value="canshop">CANS SHOP (未滿¥6000｜880日幣)</SelectItem>
+        <SelectItem value="other">其他 (660日幣)</SelectItem>
       </SelectContent>
     </Select>
   )
