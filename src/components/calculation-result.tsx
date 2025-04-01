@@ -67,6 +67,8 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         return "stripe club"
       case "canshop":
         return "canshop"
+      case "majesticlegon":
+        return "majestic legon"
       default:
         return "其他"
     }

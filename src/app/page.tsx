@@ -37,7 +37,7 @@ export default function Home() {
     shopeePrice: 0,
     otherPlatformPrice: 0,
     grandTotal: 0,
-    selectedPlatform: "shopee", // 默认选择蝦皮
+    selectedPlatform: "myship", // 默認賣貨便
   })
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)

@@ -13,5 +13,6 @@ export const storeShippingConfig: Record<string, { fee: number; freeThreshold: n
     dotST: { fee: 385, freeThreshold: 5000 },
     stripe: { fee: 600, freeThreshold: 6000 },
     canshop: { fee: 880, freeThreshold: 6000 },
+    majesticlegon: { fee: 550, freeThreshold: 7500 },
     default: { fee: 660, freeThreshold: Infinity },
 };
