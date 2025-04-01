@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: '秘境自助報價',
@@ -14,6 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-TW">
+      <Analytics/>
       <body>{children}</body>
     </html>
   )
