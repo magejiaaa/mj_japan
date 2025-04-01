@@ -164,13 +164,11 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
     text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n`
-    text += `蝦皮價格 (含手續費): ${formatCurrency(summary.shopeePrice, "TWD")}\n`
-    text += `賣貨便、iopen下單費用: ${formatCurrency(summary.otherPlatformPrice, "TWD")}\n`
 
     // 添加选择的平台的最终价格
     const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
 
-    text += `【${summary.selectedPlatform === "shopee" ? "蝦皮" : "其他平台"}】最終價格: ${formatCurrency(finalPrice, "TWD")}\n`
+    text += `【${summary.selectedPlatform === "shopee" ? "蝦皮" : "賣貨便、iopen"}】最終價格: ${formatCurrency(finalPrice, "TWD")}\n`
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
