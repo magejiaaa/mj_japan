@@ -20,6 +20,8 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
 
   const getCategoryInfo = (category: string) => {
     switch (category) {
+      case "underwear":
+        return { weight: "0.3kg", fee: 80, name: "單件透膚內搭" }
       case "clothing":
         return { weight: "0.5kg", fee: 100, name: "薄款上下著" }
       case "coat":
@@ -69,14 +71,22 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         return "canshop"
       case "majesticlegon":
         return "majestic legon"
+      case "rakuten":
+        return "樂天Fashion"
       default:
         return "其他"
     }
   }
 
   const getDomesticShippingFee = (store: string, storeTotal: number) => {
-    const config = storeShippingConfig[store] || storeShippingConfig.default;
-    return storeTotal >= config.freeThreshold ? 0 : config.fee;
+    const config = storeShippingConfig[store] || storeShippingConfig.default
+    // 如果是canshop達免運標準，則運費330日幣
+    if (store === "canshop" && storeTotal >= config.freeThreshold) {
+      return 330;
+    } else {
+      // 如果是其他店家達免運標準，則運費0日幣
+      return storeTotal >= config.freeThreshold ? 0 : config.fee;
+    }
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -143,7 +153,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
       }
     })
-
+    
     // 添加店家運費信息
     text += "\n店家運費:\n"
     processedStores.forEach((info, store) => {

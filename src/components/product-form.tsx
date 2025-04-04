@@ -37,7 +37,7 @@ export default function ProductForm({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4 max-h-[400px] overflow-y-auto">
+        <div className="space-y-4 md:max-h-[400px] overflow-y-auto">
           {products.map((product) => (
             <ProductItem
               key={product.id}

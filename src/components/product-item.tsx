@@ -138,6 +138,7 @@ export default function ProductItem({
                   <SelectValue placeholder="選擇類別" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="underwear">單件透膚內搭</SelectItem>
                   <SelectItem value="clothing">薄款上下著</SelectItem>
                   <SelectItem value="coat">厚上衣、洋裝</SelectItem>
                   <SelectItem value="jeans">牛仔系列</SelectItem>

@@ -48,10 +48,17 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
 
   const categories = [
     {
+      id: "underwear",
+      name: "單件透膚內搭",
+      description: "非常輕的衣服、內衣等。重量約0.3kg，國際運費為80元/件。",
+      examples: ["內衣", "小可愛", "透膚內搭"],
+      image: "/underwear.png",
+    },
+    {
       id: "clothing",
       name: "薄款上下著",
       description: "一般棉質或雪紡上下著基本上都可以選，薄長袖也包含在內，牛仔裙、厚棉長袖上衣除外。重量約0.5kg，國際運費為100元/件。",
-      examples: ["短袖T恤", "短裙", "薄長裙", "長袖襯衫", "長裙", "短裙", "透膚外搭"],
+      examples: ["短袖T恤", "短裙", "薄長裙", "長袖襯衫", "薄針織", "短裙", "透膚長袖外搭"],
       image: "/clothing.png",
     },
     {
@@ -148,35 +155,39 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
                     <div className="text-sm opacity-70">
                       <p>
                         重量:{" "}
-                        {category.id === "clothing"
-                          ? "0.5kg"
-                          : category.id === "coat"
-                            ? "1kg"
-                            : category.id === "jeans"
-                              ? "1.5kg"
-                              : category.id === "shoes"
-                                ? "2kg"
-                                : category.id === "shortBoots"
-                                  ? "2.5kg"
-                                  : category.id === "longBoots"
-                                    ? "3kg"
-                                  : "1kg"}
+                        {category.id === "underwear"
+                          ? "0.3kg"
+                          : category.id === "clothing"
+                            ? "0.5kg"
+                            : category.id === "coat"
+                              ? "1kg"
+                              : category.id === "jeans"
+                                ? "1.5kg"
+                                : category.id === "shoes"
+                                  ? "2kg"
+                                  : category.id === "shortBoots"
+                                    ? "2.5kg"
+                                    : category.id === "longBoots"
+                                      ? "3kg"
+                                    : "1kg"}
                       </p>
                       <p>
                         國際運費:{" "}
-                        {category.id === "clothing"
-                          ? "100"
-                          : category.id === "coat"
-                            ? "200"
-                            : category.id === "jeans"
-                              ? "300"
-                              : category.id === "shoes"
-                                ? "400"
-                                : category.id === "shortBoots"
-                                  ? "500"
-                                  : category.id === "longBoots"
-                                    ? "600"
-                                  : "200"}{" "}
+                        {category.id === "underwear"
+                          ? "80"
+                          : category.id === "clothing"
+                            ? "100"
+                            : category.id === "coat"
+                              ? "200"
+                              : category.id === "jeans"
+                                ? "300"
+                                : category.id === "shoes"
+                                  ? "400"
+                                  : category.id === "shortBoots"
+                                    ? "500"
+                                    : category.id === "longBoots"
+                                      ? "600"
+                                    : "200"}{" "}
                         元/件
                       </p>
                     </div>

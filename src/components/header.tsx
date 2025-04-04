@@ -9,10 +9,19 @@ interface HeaderProps {
 }
 
 export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
+  // 點擊按鈕跳轉到頁面最尾端
+  const scrollToBottom = () => {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: "smooth",
+    })
+  }
+
   return (
     <header className="flex flex-col items-center justify-center text-center">
       <div className="relative w-full flex justify-center">
-        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-auto flex justify-between md:justify-center gap-2">
+          <button className="border border-[#F8F0E3] p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
           <Button
             variant="ghost"
             size="icon"
@@ -36,7 +45,6 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
           <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
         </a>
       </div>
-
       <div className="w-24 h-1 bg-[#F8F0E3]/30 rounded-full mt-2"></div>
     </header>
   )

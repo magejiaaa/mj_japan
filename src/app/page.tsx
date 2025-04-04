@@ -125,13 +125,23 @@ export default function Home() {
     // 然后根据每个店家的总金额判断是否免运费
     processedStores.forEach((storeTotal, store) => {
       const config = storeShippingConfig[store] || storeShippingConfig.default
-      totalDomesticShippingJPY += isFreeShipping(store, storeTotal) ? 0 : config.fee
+      // 如果是canshop達免運標準，則運費330日幣
+      if (store === "canshop" && storeTotal >= config.freeThreshold) {
+        totalDomesticShippingJPY += 330
+      } else if (isFreeShipping(store, storeTotal)) {
+        totalDomesticShippingJPY += 0
+      } else {
+        totalDomesticShippingJPY += config.fee
+      }
     })
 
     // 計算國際運費（台幣）- 每件商品都要計算
     products.forEach((product) => {
       let internationalShippingPerItem = 0
       switch (product.category) {
+        case "underwear":
+          internationalShippingPerItem = 80
+          break
         case "clothing":
           internationalShippingPerItem = 100
           break

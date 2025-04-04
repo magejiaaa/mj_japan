@@ -28,8 +28,9 @@ export default function StoreSelector({ id, value, onChange }: StoreSelectorProp
         <SelectItem value="ACDC">ACDC RAG (未滿¥5500｜590日幣)</SelectItem>
         <SelectItem value="dotST">dot-st (未滿¥5000｜385日幣)</SelectItem>
         <SelectItem value="stripe">stripe club (未滿¥6000｜600日幣)</SelectItem>
-        <SelectItem value="canshop">CANS SHOP (未滿¥6000｜880日幣)</SelectItem>
+        <SelectItem value="canshop">CAN SHOP (未滿¥6000｜880日幣｜滿額¥330)</SelectItem>
         <SelectItem value="majesticlegon">majesticlegon (未滿¥7500｜550日幣)</SelectItem>
+        <SelectItem value="rakuten">樂天Fashion (未滿¥3980｜770日幣)</SelectItem>
         <SelectItem value="other">其他 (660日幣)</SelectItem>
       </SelectContent>
     </Select>
