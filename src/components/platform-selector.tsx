@@ -5,8 +5,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface PlatformSelectorProps {
-  selectedPlatform: "shopee" | "other"
-  onPlatformChange: (platform: "shopee" | "other") => void
+  selectedPlatform: "shopee" | "iopen" | "myship"
+  onPlatformChange: (platform: "shopee" | "iopen" | "myship") => void
 }
 
 export default function PlatformSelector({ selectedPlatform, onPlatformChange }: PlatformSelectorProps) {
@@ -18,7 +18,7 @@ export default function PlatformSelector({ selectedPlatform, onPlatformChange }:
       <CardContent>
         <RadioGroup
           value={selectedPlatform}
-          onValueChange={(value) => onPlatformChange(value as "shopee" | "other")}
+          onValueChange={(value) => onPlatformChange(value as "shopee" | "iopen" | "myship")}
           className="flex flex-col space-y-2 p-4 bg-[#F9F5EB] dark:bg-[#3D2A2D] rounded-lg shadow-sm"
         >
           <div className="flex items-center space-x-2">

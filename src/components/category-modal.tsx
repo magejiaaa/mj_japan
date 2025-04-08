@@ -258,19 +258,24 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
       freight: "200",
       examples: [
         {
-          ex_name:"玩具"
+          ex_name:"玩具",
+          image: ""
         }, 
         {
-          ex_name:"文具"
+          ex_name:"文具",
+          image: ""
         }, 
         {
-          ex_name:"家居用品"
+          ex_name:"家居用品",
+          image: ""
         }, 
         {
-          ex_name:"飾品"
+          ex_name:"飾品",
+          image: ""
         }, 
         {
-          ex_name:"紀念品"
+          ex_name:"紀念品",
+          image: ""
         }
       ]
     },

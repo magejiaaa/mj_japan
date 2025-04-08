@@ -17,6 +17,6 @@ export interface CalculationSummary {
   shopeePrice: number
   otherPlatformPrice: number
   grandTotal: number
-  selectedPlatform: "shopee" | "other"
+  selectedPlatform: "shopee" | "iopen" | "myship"
 }
 

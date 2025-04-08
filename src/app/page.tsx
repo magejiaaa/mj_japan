@@ -15,7 +15,7 @@ import { storeShippingConfig } from "@/lib/storeShippingConfig"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [lastUpdated, setLastUpdated] = useState<string>("-")
   const [products, setProducts] = useState<ProductItem[]>([
     {
       id: "1",
@@ -71,7 +71,7 @@ export default function Home() {
           const rate = Math.ceil(latestRate.cash_sell * 100) / 100
           setExchangeRate(rate)
       }
-      setLastUpdated(new Date())
+      setLastUpdated(data.data[data.data.length - 1].date)
     } catch (error) {
       console.error("無法獲取匯率:", error)
     }
@@ -216,7 +216,7 @@ export default function Home() {
     setProducts(products.map((product) => (product.id === updatedProduct.id ? updatedProduct : product)))
   }
 
-  const handlePlatformChange = (platform: "shopee" | "other") => {
+  const handlePlatformChange = (platform: "shopee" | "iopen" | "myship") => {
     setSummary({
       ...summary,
       selectedPlatform: platform,

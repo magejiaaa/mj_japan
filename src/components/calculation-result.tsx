@@ -114,7 +114,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     let text = "===== 秘境好物分享訂單 =====\n\n"
 
     // 添加匯率信息
-    text += `匯率: 1 日幣 = ${exchangeRate.toFixed(4)} 台幣\n\n`
+    text += `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣\n\n`
     // 添加选择的平台信息
     text += `下單平台: ${getShopName(summary.selectedPlatform)}\n`
 
@@ -173,7 +173,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")} (${formatCurrency(summary.totalTWD, "TWD")})\n`
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-    text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n`
+    text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n\n`
 
     // 添加选择的平台的最终价格
     const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice

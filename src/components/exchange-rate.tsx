@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface ExchangeRateProps {
   rate: number
-  lastUpdated: Date
+  lastUpdated: string
   onRefresh: () => void
   onRateChange: (rate: number) => void
 }
@@ -31,16 +31,6 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
     setIsEditing(!isEditing)
   }
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleString("zh-TW", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
   return (
     <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
       <CardHeader className="pb-2">
@@ -52,8 +42,8 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
             onClick={onRefresh}
             className="text-[#F8F0E3] hover:text-[#F8F0E3] hover:bg-[#F5B5B5]/20 dark:hover:bg-[#3D2A2D]/50"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span className="sr-only">刷新匯率</span>
+            {/* <RefreshCw className="h-4 w-4" />
+            <span className="sr-only">刷新匯率</span> */}
           </Button>
         </CardTitle>
       </CardHeader>
@@ -81,7 +71,10 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
             {isEditing ? "保存" : "編輯"}
           </Button>
         </div>
-        <div className="text-xs mt-2 opacity-70">最後更新: {formatDate(lastUpdated)}</div>
+        <div className="text-xs mt-2 opacity-70">
+          最後更新: {lastUpdated}<br />
+          每日下午16:00自動更新收盤價，更新有延遲，如未更新可手動編輯匯率
+          </div>
       </CardContent>
     </Card>
   )
