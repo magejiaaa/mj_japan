@@ -72,6 +72,27 @@ export default function ProductItem({
             />
           </div>
 
+          {/* 当选择"其他"店家时显示自定义运费输入框 */}
+          {product.store === "other" && (
+            <div>
+              <label
+                htmlFor={`custom-shipping-${product.id}`}
+                className="block text-xs font-medium text-black dark:text-white mb-1"
+              >
+                自定義運費 (日幣) <small className="text-gray-500">一次只能算一間</small>
+              </label>
+              <Input
+                id={`custom-shipping-${product.id}`}
+                type="number"
+                min="0"
+                placeholder="輸入運費金額"
+                value={product.customShippingFee || ""}
+                onChange={(e) => handleChange("customShippingFee", Number.parseFloat(e.target.value) || 0)}
+                className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label

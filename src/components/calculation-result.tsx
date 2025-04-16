@@ -89,6 +89,21 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     }
   };
 
+  // 计算国际运费，"其他"类别只计算一次固定200元
+  const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
+    if (product.category === "other") {
+      // 如果是"其他"类别且已经处理过，返回0
+      if (otherCategoryProcessed) {
+        return 0
+      }
+      // 否则返回固定200元，不考虑数量
+      return 200
+    }
+
+    // 其他类别正常计算
+    const categoryInfo = getCategoryInfo(product.category)
+    return categoryInfo.fee * product.quantity
+  }
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("zh-TW", {
       style: "currency",
@@ -120,14 +135,20 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
 
     // 用於追踪已計算運費的店家
     const processedStores = new Map<string, { fee: number; products: string[]; total: number }>()
-
+    // 用于追踪"其他"类别是否已处理
+    let otherCategoryProcessed = false
     // 添加產品詳情
     text += "商品:\n"
     products.forEach((product, index) => {
       if (product.price > 0) {
         const categoryInfo = getCategoryInfo(product.category)
         const storeName = getStoreName(product.store)
-        const internationalShippingFee = categoryInfo.fee * product.quantity
+        const internationalShippingFee = getInternationalShippingFee(product, otherCategoryProcessed)
+        
+        // 如果是"其他"类别且有运费，标记为已处理
+        if (product.category === "other" && internationalShippingFee > 0) {
+          otherCategoryProcessed = true
+        }
         const twdPrice = product.price * exchangeRate
 
         // 收集每個店家的商品
@@ -150,7 +171,12 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         text += `   顏色尺寸: ${product.color}\n`
         text += `   類別: ${categoryInfo.name}\n`
         text += `   數量: ${product.quantity}\n`
-        text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
+        // 对于"其他"类别，特别说明国际运费
+        if (product.category === "other") {
+          text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (固定運費)\n`
+        } else {
+          text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
+        }
       }
     })
     
@@ -161,8 +187,12 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
       const domesticFee = info.fee
       const domesticFeeTWD = domesticFee * exchangeRate
       const storeTotal = info.total
-
-      text += `${storeName}: ${formatCurrency(domesticFee, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
+      // 如果是自行輸入運費的店家，則顯示自定義運費
+      if (store === "other") {
+        text += `${storeName}: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
+      } else {
+        text += `${storeName}: ${formatCurrency(domesticFee, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
+      }
 
       text += `   店家商品總額: ${formatCurrency(storeTotal, "JPY")}\n`
       text += `   包含商品: ${info.products.join(", ")}\n\n`
@@ -269,6 +299,9 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                 <span>國際運費 (台幣):</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
               </div>
+              {products.some((p) => p.category === "other" && p.price > 0) && (
+                <div className="text-xs italic">*"其他"類別商品國際運費固定為200元，多退少補</div>
+              )}
               <div className="flex justify-between">
                 <span>商品本體總計:</span>
                 <span>{formatCurrency(summary.grandTotal, "TWD")}</span>
@@ -289,7 +322,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               </div>
 
               {/* 显示选择的平台 */}
-              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#ff7070] dark:text-[#F9F5EB]">
+              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#a42c2c] dark:text-[#F9F5EB]">
                 <span>選擇下單平台:</span>
                 <span>{getShopName(summary.selectedPlatform)}</span>
               </div>
@@ -303,6 +336,8 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
             <Copy className="h-4 w-4 mr-2" />
             {copied ? "已複製到剪貼簿！" : "一鍵複製"}
           </Button>
+          <p>本網站只提供計算價格並複製的功能，無法下單！<br/>
+          需要將複製的內容貼到IG/FB訊息欄，感謝配合🫡</p>
         </div>
       </CardContent>
     </Card>

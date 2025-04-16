@@ -62,7 +62,6 @@ export default function Home() {
 
       const data = await response.json()
 
-      console.log(data)
       // 檢查是否有資料
       if (data.data && data.data.length > 0) {
           // 取得最新的匯率
@@ -103,6 +102,8 @@ export default function Home() {
 
     // 用於追踪已計算運費的店家和每个店家的总金额
     const processedStores = new Map<string, number>()
+    // 用于追踪"其他"类别的商品，确保只计算一次国际运费
+    const hasOtherCategory = products.some((product) => product.category === "other" && product.price > 0)
 
     // 首先计算每个店家的总金额
     products.forEach((product) => {
@@ -125,6 +126,14 @@ export default function Home() {
     // 然后根据每个店家的总金额判断是否免运费
     processedStores.forEach((storeTotal, store) => {
       const config = storeShippingConfig[store] || storeShippingConfig.default
+
+      if (store === "other") {
+        // 对于"其他"店家，查找该店家的第一个商品，使用其自定义运费
+        const productWithCustomFee = products.find((p) => p.store === "other")
+        if (productWithCustomFee) {
+          totalDomesticShippingJPY += productWithCustomFee.customShippingFee || 0
+        }
+      }
       // 如果是canshop達免運標準，則運費330日幣
       if (store === "canshop" && storeTotal >= config.freeThreshold) {
         totalDomesticShippingJPY += 330
@@ -135,8 +144,14 @@ export default function Home() {
       }
     })
 
-    // 計算國際運費（台幣）- 每件商品都要計算
+    // 計算國際運費（台幣）- 每件商品都要計算，但"其他"类别只计算一次
+    if (hasOtherCategory) {
+      // 如果有"其他"类别的商品，直接加上200元固定运费
+      totalInternationalShipping += 200
+    }
     products.forEach((product) => {
+      // 跳过"其他"类别的商品，因为已经计算过了
+      if (product.category === "other") return
       let internationalShippingPerItem = 0
       switch (product.category) {
         case "underwear":
@@ -202,6 +217,7 @@ export default function Home() {
         price: 0,
         quantity: 1,
         category: "clothing",
+        customShippingFee: 0, // 新增自定义运费字段
       },
     ])
   }

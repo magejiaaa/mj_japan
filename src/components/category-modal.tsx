@@ -253,7 +253,7 @@ export default function CategoryModal({ isOpen, onClose, darkMode }: CategoryMod
     {
       id: "other",
       name: "其他",
-      description: "若商品不屬於上述分類，將以實際稱重計價，基本起運為1公斤200元。若有特殊材質、包裝或尺寸，運費將依實際狀況調整，多退少補，請提供具體商品資訊以利估算。",
+      description: "若商品不屬於上述分類，將以實際稱重計價，運費為1公斤200元，0.5kg為一個單位。若有特殊材質、包裝或尺寸，運費將依實際狀況調整，多退少補，請提供具體商品資訊以利估算。",
       weight: "1kg",
       freight: "200",
       examples: [

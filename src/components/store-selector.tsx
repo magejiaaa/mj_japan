@@ -31,7 +31,7 @@ export default function StoreSelector({ id, value, onChange }: StoreSelectorProp
         <SelectItem value="canshop">CAN SHOP (未滿¥6000｜880日幣｜滿額¥330)</SelectItem>
         <SelectItem value="majesticlegon">majesticlegon (未滿¥7500｜550日幣)</SelectItem>
         <SelectItem value="rakuten">樂天Fashion (未滿¥3980｜770日幣)</SelectItem>
-        <SelectItem value="other">其他 (660日幣)</SelectItem>
+        <SelectItem value="other">自行輸入運費 (請勿添加商品，價格寫總價)</SelectItem>
       </SelectContent>
     </Select>
   )
