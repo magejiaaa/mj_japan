@@ -9,6 +9,8 @@ interface ShippingBreakdownProps {
   internationalShipping: number
   store: string
   storeTotal: number
+  isCustomShipping?: boolean
+  isOtherCategory?: boolean
 }
 
 export default function ShippingBreakdown({
@@ -17,6 +19,8 @@ export default function ShippingBreakdown({
   internationalShipping,
   store,
   storeTotal,
+  isCustomShipping,
+  isOtherCategory,
 }: ShippingBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -51,14 +55,19 @@ export default function ShippingBreakdown({
               {formatCurrency(domesticShippingJPY, "JPY")} ({formatCurrency(domesticShippingTWD, "TWD")})
             </span>
           </div>
-
-          {store !== "free" && (
+          {isCustomShipping && <div className="text-blue-600 dark:text-blue-400 text-[10px] italic">*自定義運費</div>}
+          {store !== "free" && !isCustomShipping && (
             <div className="text-black/50 dark:text-white/50 text-[10px] italic">*同一店家只計算一次運費</div>
           )}
           <div className="flex justify-between">
             <span className="text-black/60 dark:text-white/60">國際運費:</span>
             <span>{formatCurrency(internationalShipping, "TWD")}</span>
           </div>
+
+          {/* 显示"其他"类别固定运费提示 */}
+          {isOtherCategory && (
+            <div className="text-black/50 dark:text-white/50 text-[10px] italic">*"其他"類別固定運費200元</div>
+          )}
           <div className="flex justify-between font-medium pt-1">
             <span className="text-black/80 dark:text-white/80">運費總計:</span>
             <span>{formatCurrency(domesticShippingTWD + internationalShipping, "TWD")}</span>

@@ -6,7 +6,7 @@ export interface ProductItem {
   quantity: number
   category: string
   color: string
-  customShippingFee: number // 新增自定义运费字段
+  customShippingFee?: number // 新增自定义运费字段
 }
 
 export interface CalculationSummary {

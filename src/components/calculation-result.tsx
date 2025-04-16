@@ -271,6 +271,8 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                     internationalShipping={internationalShippingFee}
                     store={product.store}
                     storeTotal={storeTotal}
+                    isCustomShipping={product.store === "other" && product.customShippingFee !== undefined}
+                    isOtherCategory={product.category === "other"}
                   />
                 </div>
               )
