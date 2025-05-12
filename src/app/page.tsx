@@ -207,19 +207,45 @@ export default function Home() {
   }
 
   const handleAddProduct = () => {
+    // 新增的商品store取上一個商品的store
+    const lastProduct = products[products.length - 1]
+      ? products[products.length - 1].store
+      : "free"
     setProducts([
       ...products,
       {
         id: Date.now().toString(),
         url: "",
         color: "",
-        store: "GRL",
+        store: lastProduct,
         price: 0,
         quantity: 1,
         category: "clothing",
         customShippingFee: 0, // 新增自定义运费字段
       },
     ])
+    // 滾動至新增的商品，手機版不需要
+    if (window.innerWidth > 768) {
+      setTimeout(() => {
+        const productList = document.querySelector(".product-list")
+        if (productList) {
+          productList.scrollTop = productList.scrollHeight
+        }
+      }, 0)
+    } else {
+      // 手機版滾動至.product-list-box最底部的位置
+      setTimeout(() => {
+        const productListBox = document.querySelector(".product-list-box")
+        if (productListBox) {
+          const rect = productListBox.getBoundingClientRect()
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+          window.scrollTo({
+            top: rect.top + scrollTop + productListBox.scrollHeight - 560,
+            behavior: "smooth", // 平滑滾動
+          })
+        }
+      }, 0)
+    }
   }
 
   const handleRemoveProduct = (id: string) => {
@@ -255,10 +281,10 @@ export default function Home() {
     <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
       <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
         <div className="min-h-screen bg-[#F5B5B5] dark:bg-[#3D2A2D] text-[#F8F0E3]">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-0 pb-8">
             <Header toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
 
-            <main className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <main className="mt-8 px-4 grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
                 <ExchangeRate
                   rate={exchangeRate}
@@ -274,11 +300,10 @@ export default function Home() {
                   onProductChange={handleProductChange}
                   onOpenCategoryModal={openCategoryModal}
                 />
-
-                <PlatformSelector selectedPlatform={summary.selectedPlatform} onPlatformChange={handlePlatformChange} />
               </div>
 
-              <div>
+              <div className="space-y-6">
+                <PlatformSelector selectedPlatform={summary.selectedPlatform} onPlatformChange={handlePlatformChange} />
                 <CalculationResult
                   products={products}
                   summary={summary}

@@ -43,8 +43,8 @@ export default function ProductForm({
       <li>若產品類別選擇「其他」，將預設先計算 1kg 的運費，後續多退少補。<br />若是文具、小物等商品，不需要逐一填寫，金額可先填寫總價來估算運費，之後再透過 IG 告知各項品項即可。</li>
       <li>類別說明可點擊下方 <HelpCircle className="h-3 w-3 inline-block" /> 圖示</li>
       </ul>
-      <CardContent>
-        <div className="space-y-4 md:max-h-[400px] overflow-y-auto">
+      <CardContent className="product-list-box">
+        <div className="space-y-4 md:max-h-[400px] overflow-y-auto product-list">
           {products.map((product) => (
             <ProductItem
               key={product.id}

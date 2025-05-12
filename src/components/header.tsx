@@ -18,15 +18,15 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
   }
 
   return (
-    <header className="flex flex-col items-center justify-center text-center">
+    <header className="flex flex-col items-center justify-center text-center bg-[#F9F5EB] dark:bg-[#3D2A2D] pt-8 pb-4 text-[#3D2A2D] dark:text-[#F8F0E3] rounded-b-2xl shadow-lg">
       <div className="relative w-full flex justify-center">
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full md:w-auto flex justify-between md:justify-center gap-2">
-          <button className="border border-[#F8F0E3] p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
+        <div className="absolute px-4 right-0 top-1/2 -translate-y-1/2 w-full md:w-auto flex justify-between md:justify-center gap-2">
+          <button className="border border-[#3D2A2D] hover:bg-[#F5B5B5]/20 p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleDarkMode}
-            className="text-[#F8F0E3] hover:text-[#F8F0E3] hover:bg-[#F5B5B5]/20 dark:hover:bg-[#3D2A2D]/50"
+            className="text-[#3D2A2D] hover:bg-[#F5B5B5]/20 dark:hover:bg-[#3D2A2D]/50"
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             <span className="sr-only">切換深色模式</span>
@@ -45,7 +45,6 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
           <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
         </a>
       </div>
-      <div className="w-24 h-1 bg-[#F8F0E3]/30 rounded-full mt-2"></div>
     </header>
   )
 }
