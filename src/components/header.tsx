@@ -18,7 +18,7 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
   }
 
   return (
-    <header className="flex flex-col items-center justify-center text-center bg-[#F9F5EB] dark:bg-[#3D2A2D] pt-8 pb-4 text-[#3D2A2D] dark:text-[#F8F0E3] rounded-b-2xl shadow-lg">
+    <header className="flex flex-col items-center justify-center text-center bg-[#F9F5EB] dark:bg-[#3D2A2D] pt-8 text-[#3D2A2D] dark:text-[#F8F0E3] rounded-b-2xl shadow-lg">
       <div className="relative w-full flex justify-center">
         <div className="absolute px-4 right-0 top-1/2 -translate-y-1/2 w-full md:w-auto flex justify-between md:justify-center gap-2">
           <button className="border border-[#3D2A2D] hover:bg-[#F5B5B5]/20 p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
@@ -36,13 +36,10 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
 
       <div className="mt-4 mb-2">
         <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="relative">
-              秘境
-              <Star className="absolute -top-4 -right-6 w-4 h-4 text-[#F8F0E3] opacity-70" />
-            </span>
+          <h1 className="m-3 md:m-6 rounded-2xl overflow-hidden">
+            <span className="hidden">秘境日本代購自助報價</span>
+            <img className="h-[150px] md:h-[300px] object-cover" src="/banner.png" alt="" />
           </h1>
-          <p className="text-lg mt-1 opacity-90">日本代購自助報價</p>
         </a>
       </div>
     </header>
