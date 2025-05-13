@@ -71,8 +71,8 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
             {isEditing ? "保存" : "編輯"}
           </Button>
         </div>
-        <div className="text-xs mt-2 opacity-70">
-          最後更新: {lastUpdated}<br />
+        <div className="text-xs mt-2 opacity-70 leading-5">
+          最後更新: {lastUpdated} <br />
           每日下午16:00自動更新收盤價，更新有延遲，如未更新可手動編輯匯率
           <p className="text-[#a42c2c]">🎀🎀zozotown匯率請依照IG公告進行編輯</p>
         </div>

@@ -85,6 +85,7 @@ export default function ProductItem({
                 id={`custom-shipping-${product.id}`}
                 type="number"
                 min="0"
+                inputMode="numeric" 
                 placeholder="輸入運費金額"
                 value={product.customShippingFee || ""}
                 onChange={(e) => handleChange("customShippingFee", Number.parseFloat(e.target.value) || 0)}
@@ -104,8 +105,9 @@ export default function ProductItem({
               <Input
                 id={`price-${product.id}`}
                 type="number"
+                inputMode="numeric" 
                 min="0"
-                placeholder="0"
+                placeholder="物品價格"
                 value={product.price || ""}
                 onChange={(e) => handleChange("price", Number.parseFloat(e.target.value) || 0)}
                 className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white"
@@ -122,6 +124,7 @@ export default function ProductItem({
               <Input
                 id={`quantity-${product.id}`}
                 type="number"
+                inputMode="numeric" 
                 min="1"
                 max="100"
                 value={product.quantity}
