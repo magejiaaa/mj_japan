@@ -186,12 +186,14 @@ export default function Home() {
     const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
     const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
 
-    // 计算蝦皮价格 (总价/82.5%，取20的倍数)
-    const rawShopeePrice = grandTotal / 0.825
+    // 計算蝦皮價格 (總價/81.5%，取20的倍數)
+    // 蝦皮手續費5.5%(成交) + 2%(金流) + 7%(免運) + 預購(3%) = 17.5%
+    // 小規模人營業稅1%
+    const rawShopeePrice = grandTotal / 0.815
     const shopeePrice = Math.ceil(rawShopeePrice / 20) * 20
 
-    // 计算其他平台价格 (蝦皮价格/1.165)
-    const otherPlatformPrice = Math.ceil(shopeePrice / 1.165)
+    // 計算其他平台價格 (蝦皮價格/1.175)
+    const otherPlatformPrice = Math.ceil(shopeePrice / 1.175)
 
     setSummary({
       totalJPY,

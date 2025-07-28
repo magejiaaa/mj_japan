@@ -15,5 +15,6 @@ export const storeShippingConfig: Record<string, { fee: number; freeThreshold: n
     canshop: { fee: 880, freeThreshold: 6000 },
     majesticlegon: { fee: 550, freeThreshold: 7500 },
     rakuten: { fee: 770, freeThreshold: 3980 },
+    pium: { fee: 800, freeThreshold: Infinity },
     default: { fee: 0, freeThreshold: Infinity },
 };
