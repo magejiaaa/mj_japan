@@ -1,5 +1,4 @@
 "use client"
-
 import { Trash2, HelpCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -28,7 +27,7 @@ export default function ProductItem({
       [field]: value,
     })
   }
-
+  
   return (
     <div className="p-4 bg-[#F9F5EB] dark:bg-[#3D2A2D] rounded-lg shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">

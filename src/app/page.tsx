@@ -27,6 +27,9 @@ export default function Home() {
       category: "clothing",
     },
   ])
+  const handleImportProducts = (imported: ProductItem[]) => {
+    setProducts(imported);
+  };
   // 初始化 summary 状态，移除 serviceFee，添加新的价格字段
   const [summary, setSummary] = useState<CalculationSummary>({
     totalJPY: 0,
@@ -301,6 +304,7 @@ export default function Home() {
                   onRemoveProduct={handleRemoveProduct}
                   onProductChange={handleProductChange}
                   onOpenCategoryModal={openCategoryModal}
+                  onImportProducts={handleImportProducts}
                 />
               </div>
 

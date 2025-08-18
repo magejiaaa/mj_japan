@@ -47,7 +47,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
           </Button> */}
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-[136px]">
+      <CardContent>
         <div className="flex items-center gap-2">
           <div className="text-xl font-bold">1 日幣 =</div>
           {isEditing ? (
