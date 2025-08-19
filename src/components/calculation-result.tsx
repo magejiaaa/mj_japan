@@ -253,14 +253,14 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               {/* 显示两个平台的价格 */}
               <h3 className="font-medium mt-4 mb-3 border-t border-[#F8F0E3]/20 pt-2">含稅下單價格 <span className="text-xs text-black/60 dark:text-white/60">包含營業稅、關稅與包材費用</span></h3>
               <div className="flex justify-between items-center">
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>蝦皮價格 (含手續費):</span>
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>蝦皮價格 (含手續費):</span>
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>
                   {formatCurrency(summary.shopeePrice, "TWD")}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>賣貨便、iopen下單費用:</span>
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>賣貨便、iopen下單費用:</span>
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>
                   {formatCurrency(summary.otherPlatformPrice, "TWD")}
                 </span>
               </div>

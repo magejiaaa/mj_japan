@@ -3,6 +3,7 @@
 import { Plus, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
 import ProductItem from "@/components/product-item"
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import React from "react"
@@ -43,7 +44,7 @@ export default function ProductForm({
       const storeKey = storeMatch ? getStoreKey(storeMatch[1].trim()) : undefined;
       const priceMatch = item.match(/價格:\s*¥([\d,]+)/);
       const price = priceMatch?.[1] ? Number(priceMatch[1].replace(/,/g, "")) : 0;
-      const colorMatch = item.match(/顏色尺寸:\s*(.*)/);
+      const colorMatch = item.match(/顏色尺寸:\s*([\s\S]*?)類別:/);
       const categoryMatch = item.match(/類別:\s*(.*)/);
       const categoryKey = categoryMatch ? getCategoryKey(categoryMatch[1].trim()) : undefined;
       const quantityMatch = item.match(/數量:\s*(\d+)/);
@@ -53,10 +54,10 @@ export default function ProductForm({
       return {
         id: Math.random().toString(36).slice(2),
         url: urlMatch?.[1]?.trim() || "",
-        store: storeKey,
+        store: storeKey ?? "",
         price,
         color: colorMatch?.[1]?.trim() || "",
-        category: categoryKey,
+        category: categoryKey ?? "",
         quantity: quantityMatch?.[1] ? Number(quantityMatch[1]) : 1,
         customShippingFee: shippingMatch?.[1] ? Number(shippingMatch[1]) : 0,
       };
@@ -85,23 +86,7 @@ export default function ProductForm({
           </Button>
         </CardTitle>
       </CardHeader>
-      {/* 導入商品資料區塊 */}
-      <div className="mt-4">
-        <textarea
-          value={importText}
-          onChange={e => setImportText(e.target.value)}
-          rows={6}
-          className="w-full border p-2"
-          placeholder="貼上商品資料..."
-        />
-        <Button
-          onClick={handleImport}
-          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          導入
-        </Button>
-      </div>
-      <ul className="pl-10 pr-6 mb-2 text-sm text-[#a42c2c] dark:text-gray-400 list-disc">
+      <ul className="pl-10 pr-6 mb-2 text-sm dark:text-gray-400 list-disc">
         <li>若日本店家選擇「自行輸入運費」，請填寫該店的總金額即可，並請單獨計算，不要與其他店家合併。</li>
         <li>若產品類別選擇「其他」，將預設先計算 1kg 的運費，後續多退少補。<br />若是文具、小物等商品，不需要逐一填寫，金額可先填寫總價來估算運費，之後再透過 IG 告知各項品項即可。</li>
         <li>類別說明可點擊下方 <HelpCircle className="h-3 w-3 inline-block" /> 圖示</li>
@@ -120,6 +105,27 @@ export default function ProductForm({
           ))}
         </div>
       </CardContent>
+      {/* 導入商品資料區塊 */}
+      <div className="pb-6 mx-6">
+        <div className="p-4 bg-[#F9F5EB] dark:bg-[#3D2A2D] rounded-lg shadow-sm">
+          <label className="block text-xs font-medium text-black dark:text-white mb-1">
+            本網站一鍵複製的內容可貼上此區塊進行導入
+          </label>
+          <Textarea
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+            rows={4}
+            className="w-full"
+            placeholder="僅可辨識本網站導出的商品資料..."
+          />
+        </div>
+        <Button
+          onClick={handleImport}
+          className="mt-2 px-4 py-2 w-full bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white rounded"
+        >
+          導入
+        </Button>
+      </div>
     </Card>
   )
 }
