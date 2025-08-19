@@ -7,10 +7,11 @@ import ProductForm from "@/components/product-form"
 import CalculationResult from "@/components/calculation-result"
 import CategoryModal from "@/components/category-modal"
 import Footer from "@/components/footer"
+import { Button } from "@/components/ui/button"
 import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
-import { Instagram, Facebook } from "lucide-react"
+import { Instagram, Facebook, ArrowUp } from "lucide-react"
 import { storeShippingConfig } from "@/lib/storeShippingConfig"
 
 export default function Home() {
@@ -27,6 +28,9 @@ export default function Home() {
       category: "clothing",
     },
   ])
+  const handleImportProducts = (imported: ProductItem[]) => {
+    setProducts(imported);
+  };
   // 初始化 summary 状态，移除 serviceFee，添加新的价格字段
   const [summary, setSummary] = useState<CalculationSummary>({
     totalJPY: 0,
@@ -301,6 +305,7 @@ export default function Home() {
                   onRemoveProduct={handleRemoveProduct}
                   onProductChange={handleProductChange}
                   onOpenCategoryModal={openCategoryModal}
+                  onImportProducts={handleImportProducts}
                 />
               </div>
 
@@ -323,6 +328,11 @@ export default function Home() {
                   </a>
                 </div>
               </div>
+
+              {/* scroll to top */}
+              <Button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white rounded-full fixed bottom-4 right-4">
+                <ArrowUp className="h-4 w-4" />
+              </Button>
             </main>
 
             <Footer />

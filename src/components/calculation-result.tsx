@@ -7,6 +7,8 @@ import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { useState } from "react"
 import ShippingBreakdown from "@/components/shipping-breakdown"
 import { storeShippingConfig } from "@/lib/storeShippingConfig"
+import { getStoreName } from "@/lib/storeNameMap"
+import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
   products: ProductItem[]
@@ -17,66 +19,6 @@ interface CalculationResultProps {
 
 export default function CalculationResult({ products, summary, exchangeRate, storeAmounts }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
-
-  const getCategoryInfo = (category: string) => {
-    switch (category) {
-      case "underwear":
-        return { weight: "0.3kg", fee: 80, name: "單件透膚內搭" }
-      case "clothing":
-        return { weight: "0.5kg", fee: 100, name: "薄款上下著" }
-      case "coat":
-        return { weight: "1kg", fee: 200, name: "厚上衣、洋裝" }
-      case "jeans":
-        return { weight: "1.5kg", fee: 300, name: "牛仔系列" }
-      case "shoes":
-        return { weight: "2kg", fee: 400, name: "鞋子" }
-      case "shortBoots":
-        return { weight: "2.5kg", fee: 500, name: "短靴" }
-      case "longBoots":
-        return { weight: "3kg", fee: 600, name: "長靴" }
-      default:
-        return { weight: "1kg", fee: 200, name: "其他、文具" }
-    }
-  }
-
-  const getStoreName = (store: string) => {
-    switch (store) {
-      case "free":
-        return "免運費"
-      case "GRL":
-        return "GRL"
-      case "ZOZOTOWN":
-        return "ZOZOTOWN"
-      case "ROJITA":
-        return "ROJITA"
-      case "axesFemme":
-        return "axes femme"
-      case "amavel":
-        return "Amavel"
-      case "dreamvs":
-        return "夢展望"
-      case "INGNI":
-        return "INGNI"
-      case "classicalElf":
-        return "Classical Elf"
-      case "runway":
-        return "Runway Channel"
-      case "ACDC":
-        return "ACDC RAG"
-      case "dotST":
-        return "dot-st"
-      case "stripe":
-        return "stripe club"
-      case "canshop":
-        return "canshop"
-      case "majesticlegon":
-        return "majestic legon"
-      case "rakuten":
-        return "樂天Fashion"
-      default:
-        return "其他"
-    }
-  }
 
   const getDomesticShippingFee = (store: string, storeTotal: number) => {
     const config = storeShippingConfig[store] || storeShippingConfig.default
@@ -311,14 +253,14 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               {/* 显示两个平台的价格 */}
               <h3 className="font-medium mt-4 mb-3 border-t border-[#F8F0E3]/20 pt-2">含稅下單價格 <span className="text-xs text-black/60 dark:text-white/60">包含營業稅、關稅與包材費用</span></h3>
               <div className="flex justify-between items-center">
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>蝦皮價格 (含手續費):</span>
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold" : ""}>
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>蝦皮價格 (含手續費):</span>
+                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>
                   {formatCurrency(summary.shopeePrice, "TWD")}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>賣貨便、iopen下單費用:</span>
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold" : ""}>
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>賣貨便、iopen下單費用:</span>
+                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>
                   {formatCurrency(summary.otherPlatformPrice, "TWD")}
                 </span>
               </div>

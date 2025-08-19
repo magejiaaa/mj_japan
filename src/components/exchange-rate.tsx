@@ -47,7 +47,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
           </Button> */}
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-[136px]">
+      <CardContent>
         <div className="flex items-center gap-2">
           <div className="text-xl font-bold">1 日幣 =</div>
           {isEditing ? (
@@ -74,7 +74,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
         <div className="text-xs mt-2 opacity-70 leading-5">
           最後更新: {lastUpdated} <br />
           每日下午16:00自動更新收盤價，更新有延遲，如未更新可手動編輯匯率
-          <p className="text-[#a42c2c]">🎀🎀zozotown、canshop匯率請依照IG公告進行編輯</p>
+          <p className="text-[#a42c2c] text-lg font-bold">‼️zozotown、can online shop匯率請依照IG公告進行編輯‼️</p>
         </div>
       </CardContent>
     </Card>
