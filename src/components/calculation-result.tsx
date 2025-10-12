@@ -122,30 +122,11 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
       }
     })
     
-    // 添加店家運費信息
-    text += "\n店家運費:\n"
-    processedStores.forEach((info, store) => {
-      const storeName = getStoreName(store)
-      const domesticFee = info.fee
-      const domesticFeeTWD = domesticFee * exchangeRate
-      const storeTotal = info.total
-      // 如果是自行輸入運費的店家，則顯示自定義運費
-      if (store === "other") {
-        text += `${storeName}: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
-      } else {
-        text += `${storeName}: ${formatCurrency(domesticFee, "JPY")} (${formatCurrency(domesticFeeTWD, "TWD")})\n`
-      }
-
-      text += `   店家商品總額: ${formatCurrency(storeTotal, "JPY")}\n`
-      text += `   包含商品: ${info.products.join(", ")}\n\n`
-    })
-
     // 添加摘要
     text += "訂單摘要:\n"
     text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")} (${formatCurrency(summary.totalTWD, "TWD")})\n`
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-    text += `總計: ${formatCurrency(summary.grandTotal, "TWD")}\n\n`
 
     // 添加选择的平台的最终价格
     const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
@@ -228,10 +209,10 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                 <span>商品總額 (日幣):</span>
                 <span>{formatCurrency(summary.totalJPY, "JPY")}</span>
               </div>
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span>商品總額 (台幣):</span>
                 <span>{formatCurrency(summary.totalTWD, "TWD")}</span>
-              </div>
+              </div> */}
               <div className="flex justify-between">
                 <span>日本國內運費 (日幣):</span>
                 <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
@@ -246,10 +227,10 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               {products.some((p) => p.category === "other" && p.price > 0) && (
                 <div className="text-xs italic">*"其他"類別商品國際運費固定為200元，多退少補</div>
               )}
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span>商品本體總計:</span>
                 <span>{formatCurrency(summary.grandTotal, "TWD")}</span>
-              </div>
+              </div> */}
               {/* 显示两个平台的价格 */}
               <h3 className="font-medium mt-4 mb-3 border-t border-[#F8F0E3]/20 pt-2">含稅下單價格 <span className="text-xs text-black/60 dark:text-white/60">包含營業稅、關稅與包材費用</span></h3>
               <div className="flex justify-between items-center">
@@ -272,7 +253,6 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               </div>
             </div>
           </div>
-
           <Button
             onClick={copyToClipboard}
             className="w-full bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white"

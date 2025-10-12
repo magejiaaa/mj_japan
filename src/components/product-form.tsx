@@ -5,6 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import ProductItem from "@/components/product-item"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import React from "react"
 import { getStoreKey } from "@/lib/storeNameMap"
@@ -28,6 +39,7 @@ export default function ProductForm({
   onImportProducts,
 }: ProductFormProps) {
   const [importText, setImportText] = React.useState("");
+  const [open, setOpen] = React.useState(false);
 
   function parseProductData(text: string) {
     // 只抓商品: 之後、店家運費: 之前
@@ -69,6 +81,22 @@ export default function ProductForm({
     onImportProducts(imported);
     setImportText("");
   };
+
+  // 驗證導入內容是否有資料
+  function importValid() {
+    if (!importText.trim()) return false;
+    const imported = parseProductData(importText);
+    return imported.length > 0;
+  }
+
+  // 當按下 trigger 想開 dialog 前
+  function handleTriggerClick(e: React.MouseEvent) {
+    e.preventDefault(); // 避免預設的提交動作
+    if (importValid()) {
+      setOpen(true);
+    }
+    // 若驗證不過，就不打開 dialog
+  }
 
   return (
     <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
@@ -119,12 +147,32 @@ export default function ProductForm({
             placeholder="僅可辨識本網站導出的商品資料..."
           />
         </div>
-        <Button
-          onClick={handleImport}
-          className="mt-2 px-4 py-2 w-full bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white rounded"
-        >
-          導入
-        </Button>
+        
+        {importValid() && (
+          <AlertDialog open={open} onOpenChange={setOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  onClick={handleTriggerClick}
+                  className="mt-2 px-4 py-2 w-full bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white rounded"
+                >
+                  導入
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>確定要導入嗎？</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    導入將會覆蓋現有的商品列表，請確認是否正確。<br />請確保已將要導入的內容複製至剪貼版。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction 
+                  onClick={handleImport}>繼續</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
     </Card>
   )
