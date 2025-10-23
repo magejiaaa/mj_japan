@@ -42,8 +42,8 @@ export default function ProductForm({
   const [open, setOpen] = React.useState(false);
 
   function parseProductData(text: string) {
-    // 只抓商品: 之後、店家運費: 之前
-    const match = text.match(/商品:\s*\n([\s\S]*?)店家運費:/);
+    // 只抓商品: 之後、訂單摘要: 之前
+    const match = text.match(/商品:\s*\n([\s\S]*?)訂單摘要:/);
     const productSection = match ? match[1] : "";
     if (!productSection) return [];
     // 以商品編號分割
@@ -147,7 +147,9 @@ export default function ProductForm({
             placeholder="僅可辨識本網站導出的商品資料..."
           />
         </div>
-        
+        {importText && !importValid() && (
+          <p className="text-sm text-red-500 mt-1">❌ 無法辨識導入格式，請確認文字內容</p>
+        )}
         {importValid() && (
           <AlertDialog open={open} onOpenChange={setOpen}>
               <AlertDialogTrigger asChild>
