@@ -31,7 +31,7 @@ export default function Home() {
   const handleImportProducts = (imported: ProductItem[]) => {
     setProducts(imported);
   };
-  // 初始化 summary 状态，移除 serviceFee，添加新的价格字段
+  // 初始化 summary 狀態，移除 serviceFee，新增新的價格字段
   const [summary, setSummary] = useState<CalculationSummary>({
     totalJPY: 0,
     totalTWD: 0,
@@ -106,15 +106,16 @@ export default function Home() {
 
     // 用於追踪已計算運費的店家和每个店家的总金额
     const processedStores = new Map<string, number>()
-    // 用于追踪"其他"类别的商品，确保只计算一次国际运费
+    // 用於追蹤"其他"類別的商品，確保只計算一次國際運費
     const hasOtherCategory = products.some((product) => product.category === "other" && product.price > 0)
 
-    // 首先计算每个店家的总金额
+    // 首先計算每家店的總金額
     products.forEach((product) => {
       const productTotal = product.price * product.quantity
       totalJPY += productTotal
 
-      // 累计每个店家的总金额
+      // 累計每家店的總金額
+      if (product.price <= 0) return
       if (processedStores.has(product.store)) {
         processedStores.set(product.store, processedStores.get(product.store)! + productTotal)
       } else {
@@ -127,12 +128,12 @@ export default function Home() {
       const config = storeShippingConfig[store] || storeShippingConfig.default
       return storeTotal >= config.freeThreshold
     }
-    // 然后根据每个店家的总金额判断是否免运费
+    // 然後根據每家店的總金額來判斷是否免運費
     processedStores.forEach((storeTotal, store) => {
       const config = storeShippingConfig[store] || storeShippingConfig.default
 
       if (store === "other") {
-        // 对于"其他"店家，查找该店家的第一个商品，使用其自定义运费
+        // 對於"其他"店家，尋找該店家的第一個商品，使用其自訂運費
         const productWithCustomFee = products.find((p) => p.store === "other")
         if (productWithCustomFee) {
           totalDomesticShippingJPY += productWithCustomFee.customShippingFee || 0
@@ -148,14 +149,16 @@ export default function Home() {
       }
     })
 
-    // 計算國際運費（台幣）- 每件商品都要計算，但"其他"类别只计算一次
+    // 計算國際運費（台幣）- 每件商品都要計算，但"其他"類別只計算一次
     if (hasOtherCategory) {
-      // 如果有"其他"类别的商品，直接加上200元固定运费
+      // 若有"其他"類別的商品，直接加上200元固定運費
       totalInternationalShipping += 200
     }
     products.forEach((product) => {
-      // 跳过"其他"类别的商品，因为已经计算过了
+      // 跳過"其他"類別的商品，因為已經計算過了
       if (product.category === "other") return
+      if (product.price <= 0) return
+
       let internationalShippingPerItem = 0
       switch (product.category) {
         case "underwear":
@@ -191,7 +194,7 @@ export default function Home() {
     const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
 
     // 計算蝦皮價格 (總價/81.5%，取20的倍數)
-    // 蝦皮手續費5.5%(成交) + 2%(金流) + 7%(免運) + 預購(3%) = 17.5%
+    // 蝦皮手續費6%(成交) + 2.5%(金流) + 6%(免運) + 預購(3%) = 17.5%
     // 小規模人營業稅1%
     const rawShopeePrice = grandTotal / 0.815
     const shopeePrice = Math.ceil(rawShopeePrice / 20) * 20
@@ -317,13 +320,13 @@ export default function Home() {
                   exchangeRate={exchangeRate}
                   storeAmounts={getStoreAmounts(products)}
                 />
-                
+
                 <div className="flex justify-center items-center gap-2 mt-8">
                   <p>複製後傳送至</p>
-                  <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md px-3 border border-[#F8F0E3] hover:bg-[#F8C7CC]">
+                  <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" className="social-link-btn">
                     <Instagram />Instagram
                   </a>
-                  <a href="https://www.facebook.com/mjJapan/" target="_blank" className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-9 rounded-md px-3 border border-[#F8F0E3] hover:bg-[#F8C7CC]">
+                  <a href="https://www.facebook.com/mjJapan/" target="_blank" className="social-link-btn">
                     <Facebook />Facebook
                   </a>
                 </div>
@@ -344,11 +347,12 @@ export default function Home() {
     </ThemeProvider>
   )
 
-  // 辅助函数：获取每个店家的总金额
+  // 輔助函數：取得每個店家的總金額
   function getStoreAmounts(products: ProductItem[]): Map<string, number> {
     const storeAmounts = new Map<string, number>()
 
     products.forEach((product) => {
+      if (product.price <= 0) return
       const amount = product.price * product.quantity
       if (storeAmounts.has(product.store)) {
         storeAmounts.set(product.store, storeAmounts.get(product.store)! + amount)
