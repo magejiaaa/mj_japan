@@ -5,7 +5,6 @@ interface ShippingBreakdownProps {
   store: string
   storeTotal: number
   isCustomShipping?: boolean
-  isOtherCategory?: boolean
 }
 
 export default function ShippingBreakdown({
@@ -14,7 +13,6 @@ export default function ShippingBreakdown({
   store,
   storeTotal,
   isCustomShipping,
-  isOtherCategory,
 }: ShippingBreakdownProps) {
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("zh-TW", {
@@ -37,9 +35,6 @@ export default function ShippingBreakdown({
             {formatCurrency(domesticShippingJPY, "JPY")} ({formatCurrency(domesticShippingTWD, "TWD")})
           </span>
         </div>
-        {store !== "free" && !isCustomShipping && (
-          <div className="text-black/50 dark:text-white/50 text-[10px] italic">*同一店家只計算一次運費</div>
-        )}
 
         {/* 顯示店家商品總額 */}
         <div className="flex justify-between pt-1 text-black/60 dark:text-white/60">

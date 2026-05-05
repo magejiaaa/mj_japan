@@ -268,7 +268,6 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                     store={store}
                     storeTotal={storeTotal}
                     isCustomShipping={store === "other" && firstProduct.customShippingFee !== undefined}
-                    isOtherCategory={firstProduct.category === "other"}
                   />
                 )
               })}
