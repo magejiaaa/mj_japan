@@ -31,7 +31,7 @@ export default function Home() {
   const handleImportProducts = (imported: ProductItem[]) => {
     setProducts(imported);
   };
-  // 初始化 summary 狀態，移除 serviceFee，新增新的價格字段
+  // 初始化 summary 狀態
   const [summary, setSummary] = useState<CalculationSummary>({
     totalJPY: 0,
     totalTWD: 0,
@@ -45,6 +45,8 @@ export default function Home() {
   })
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
+  // 只計算勾選的價格(預設勾選)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
 
   // 獲取匯率
   const fetchExchangeRate = async () => {
@@ -83,7 +85,7 @@ export default function Home() {
   // 當產品或匯率變化時計算總額
   useEffect(() => {
     calculateTotals()
-  }, [products, exchangeRate, summary.selectedPlatform])
+  }, [products, exchangeRate, summary.selectedPlatform, checkedIds])
 
   // 初始獲取匯率
   useEffect(() => {
@@ -99,18 +101,48 @@ export default function Home() {
     localStorage.setItem("darkMode", darkMode.toString())
   }, [darkMode])
 
+
+  // 新增商品時自動打勾
+  useEffect(() => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      products.forEach((p) => {
+        if (p.price > 0 && !next.has(p.id)) {
+          next.add(p.id)
+        }
+      })
+      // 移除已刪除商品的 id
+      const productIds = new Set(products.map((p) => p.id))
+      next.forEach((id) => {
+        if (!productIds.has(id)) next.delete(id)
+      })
+      return next
+    })
+  }, [products])
+
+  const toggleCheck = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
   const calculateTotals = () => {
+    // 只計算勾選的商品
+    const filteredProducts = products.filter((p) => checkedIds.has(p.id))
+
     let totalJPY = 0
     let totalDomesticShippingJPY = 0
     let totalInternationalShipping = 0
 
-    // 用於追踪已計算運費的店家和每个店家的总金额
+    // 用於追踪已計算運費的店家和每家店的總金額
     const processedStores = new Map<string, number>()
     // 用於追蹤"其他"類別的商品，確保只計算一次國際運費
-    const hasOtherCategory = products.some((product) => product.category === "other" && product.price > 0)
+    const hasOtherCategory = filteredProducts.some((product) => product.category === "other" && product.price > 0)
 
     // 首先計算每家店的總金額
-    products.forEach((product) => {
+    filteredProducts.forEach((product) => {
       const productTotal = product.price * product.quantity
       totalJPY += productTotal
 
@@ -134,7 +166,7 @@ export default function Home() {
 
       if (store === "other") {
         // 對於"其他"店家，尋找該店家的第一個商品，使用其自訂運費
-        const productWithCustomFee = products.find((p) => p.store === "other")
+        const productWithCustomFee = filteredProducts.find((p) => p.store === "other")
         if (productWithCustomFee) {
           totalDomesticShippingJPY += productWithCustomFee.customShippingFee || 0
         }
@@ -154,7 +186,7 @@ export default function Home() {
       // 若有"其他"類別的商品，直接加上200元固定運費
       totalInternationalShipping += 200
     }
-    products.forEach((product) => {
+    filteredProducts.forEach((product) => {
       // 跳過"其他"類別的商品，因為已經計算過了
       if (product.category === "other") return
       if (product.price <= 0) return
@@ -319,6 +351,8 @@ export default function Home() {
                   summary={summary}
                   exchangeRate={exchangeRate}
                   storeAmounts={getStoreAmounts(products)}
+                  checkedIds={checkedIds}
+                  onToggleCheck={toggleCheck}
                 />
 
                 <div className="flex justify-center items-center gap-2 mt-8">

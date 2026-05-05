@@ -21,39 +21,12 @@ interface CalculationResultProps {
   summary: CalculationSummary
   exchangeRate: number
   storeAmounts: Map<string, number>
+  checkedIds: Set<string>
+  onToggleCheck: (id: string) => void
 }
 
-export default function CalculationResult({ products, summary, exchangeRate, storeAmounts }: CalculationResultProps) {
+export default function CalculationResult({ products, summary, exchangeRate, storeAmounts, checkedIds, onToggleCheck }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
-  // 儲存已勾選的商品 id
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(() =>
-    new Set(products.filter((p) => p.price > 0).map((p) => p.id))
-  )
-
-  // 新增商品時預設打勾
-  useEffect(() => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
-      products.forEach((p) => {
-        if (p.price > 0 && !next.has(p.id)) {
-          next.add(p.id)
-        }
-      })
-      return next
-    })
-  }, [products])
-
-  const toggleCheck = (id: string) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
-  }
   // 只取打勾的商品
   const checkedProducts = products.filter((p) => p.price > 0 && checkedIds.has(p.id))
 
@@ -213,7 +186,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                   <Field orientation="horizontal">
                     <Checkbox
                       checked={isChecked}
-                      onCheckedChange={() => toggleCheck(product.id)}
+                      onCheckedChange={() => onToggleCheck(product.id)}
                     ></Checkbox>
                     <FieldContent>
                     <div className="flex justify-between items-start">
@@ -243,6 +216,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                     </div>
 
                     {/* 分攤後的最終單品價格 */}
+                    {isChecked && (
                     <div className="mt-3 pt-2 border-t border-black/10 dark:border-white/10 grid grid-cols-2 gap-2 text-xs">
                       <div className={summary.selectedPlatform === "shopee" ? "font-bold text-[#f36060] dark:text-[#F9F5EB]" : "text-black/70 dark:text-white/70"}>
                         <div>蝦皮單價:</div>
@@ -253,6 +227,7 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
                         <div>{formatCurrency(allocatedOtherPrice, "TWD")}</div>
                       </div>
                     </div>
+                    )}
                     </FieldContent>
                   </Field>
                 </FieldLabel>
