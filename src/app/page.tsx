@@ -12,7 +12,7 @@ import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { Instagram, Facebook, ArrowUp } from "lucide-react"
-import { storeShippingConfig } from "@/lib/storeShippingConfig"
+import { storeShippingConfig } from "@/lib/storeConfig"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
