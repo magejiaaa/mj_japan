@@ -16,5 +16,8 @@ export const storeShippingConfig: Record<string, { fee: number; freeThreshold: n
     majesticlegon: { fee: 550, freeThreshold: 7500 },
     rakuten: { fee: 770, freeThreshold: 3980 },
     pium: { fee: 800, freeThreshold: Infinity },
+    palcloset: { fee: 550, freeThreshold: 5000 },
+    mycolor: { fee: 660, freeThreshold: 10000 },
+    lizlisa: { fee: 550, freeThreshold: 5500 },
     default: { fee: 0, freeThreshold: Infinity },
 };

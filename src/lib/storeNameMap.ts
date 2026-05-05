@@ -16,6 +16,9 @@ export const storeNameMap: Record<string, string> = {
   canshop: "canshop",
   majesticlegon: "majestic legon",
   rakuten: "樂天Fashion",
+  palcloset: "PAL CLOSET",
+  mycolor: "MyColor",
+  lizlisa: "Liz Lisa",
   other: "其他",
 };
 

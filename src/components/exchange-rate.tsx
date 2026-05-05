@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,15 +35,6 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex justify-between items-center">
           <span>當前匯率 🇯🇵</span>
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRefresh}
-            className="text-[#4D3A3D] hover:text-[#4D3A3D] hover:bg-[#F5B5B5]/20 dark:hover:bg-[#3D2A2D]/50"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span className="sr-only">刷新匯率</span>
-          </Button> */}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -72,9 +62,9 @@ export default function ExchangeRate({ rate, lastUpdated, onRefresh, onRateChang
           </Button>
         </div>
         <div className="text-xs mt-2 opacity-70 leading-5">
-          最後更新: {lastUpdated} <br />
-          每日下午16:00自動更新收盤價，更新有延遲，如未更新可手動編輯匯率
-          <p className="text-[#a42c2c] text-lg font-bold">‼️zozotown、can online shop匯率請依照IG公告進行編輯‼️</p>
+          最後更新日: {lastUpdated} <br />
+          每日下午16:00自動更新收盤價(台灣銀行現金匯率)，更新有延遲，如未更新可手動編輯匯率
+          <p className="text-[#a42c2c] text-lg font-bold">zozotown、can online shop匯率請依照IG、粉絲專頁公告進行編輯‼️(目前0.23)</p>
         </div>
       </CardContent>
     </Card>

@@ -61,7 +61,6 @@ export default function ProductForm({
       const categoryKey = categoryMatch ? getCategoryKey(categoryMatch[1].trim()) : undefined;
       const quantityMatch = item.match(/數量:\s*(\d+)/);
       const shippingMatch = item.match(/國際運費:\s*\$(\d+)/);
-      console.log(storeKey);
 
       return {
         id: Math.random().toString(36).slice(2),
@@ -115,9 +114,9 @@ export default function ProductForm({
         </CardTitle>
       </CardHeader>
       <ul className="pl-10 pr-6 mb-2 text-sm dark:text-gray-400 list-disc">
-        <li>若日本店家選擇「自行輸入運費」，請填寫該店的總金額即可，並請單獨計算，不要與其他店家合併。</li>
-        <li>若產品類別選擇「其他」，將預設先計算 1kg 的運費，後續多退少補。<br />若是文具、小物等商品，不需要逐一填寫，金額可先填寫總價來估算運費，之後再透過 IG 告知各項品項即可。</li>
-        <li>類別說明可點擊下方 <HelpCircle className="h-3 w-3 inline-block" /> 圖示</li>
+        <li>若日本店家選擇「自行輸入運費」，請填寫該店的總金額即可</li>
+        <li>若為文具、小物等商品，不需要逐一填寫，金額可先填寫總價來估算運費，之後再透過 IG 告知各項品項。</li>
+        <li>不知道選什麼類別可點擊下方 <HelpCircle className="h-3 w-3 inline-block" /> 圖示</li>
       </ul>
       <CardContent className="product-list-box">
         <div className="space-y-4 md:max-h-[400px] overflow-y-auto product-list">
@@ -140,10 +139,10 @@ export default function ProductForm({
             本網站一鍵複製的內容可貼上此區塊進行導入
           </label>
           <Textarea
+            className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white w-full"
             value={importText}
             onChange={e => setImportText(e.target.value)}
             rows={4}
-            className="w-full"
             placeholder="僅可辨識本網站導出的商品資料..."
           />
         </div>
