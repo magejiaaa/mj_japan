@@ -12,8 +12,8 @@ import {
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { useState, useEffect } from "react"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { storeShippingConfig } from "@/lib/storeShippingConfig"
-import { getStoreName } from "@/lib/storeNameMap"
+import { storeShippingConfig } from "@/lib/storeConfig"
+import { getStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {

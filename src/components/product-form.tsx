@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import React from "react"
-import { getStoreKey } from "@/lib/storeNameMap"
+import { getStoreKey } from "@/lib/storeConfig"
 import { getCategoryKey } from "@/lib/categoryMap"
 
 interface ProductFormProps {
