@@ -20,6 +20,7 @@ export const storeList: StoreConfig[] = [
   { key: "lizlisa", name: "Liz Lisa", fee: 550, freeThreshold: 5500 },
   { key: "majesticlegon", name: "majestic legon", fee: 550, freeThreshold: 7500 },
   { key: "mycolor", name: "MyColor", fee: 660, freeThreshold: 10000 },
+  { key: "mars", name: "Mars", fee: 710, freeThreshold: Infinity, label: "Mars (710日幣)" },
   { key: "pium", name: "pium", fee: 800, freeThreshold: Infinity, label: "pium (800日幣)" },
   { key: "palcloset", name: "PAL CLOSET", fee: 550, freeThreshold: 5000 },
   { key: "runway", name: "Runway Channel", fee: 330, freeThreshold: Infinity, label: "Runway Channel (330日幣)" },
