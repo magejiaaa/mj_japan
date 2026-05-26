@@ -60,6 +60,14 @@ export function getStoreName(store: string): string {
   return storeNameMap[store] ?? storeNameMap["other"];
 }
 
+/** 計算店家國內運費（日幣） */
+export function getDomesticShippingFee(store: string, storeTotal: number, customShippingFee?: number): number {
+  if (store === "other") return customShippingFee ?? 0
+  const config = storeShippingConfig[store] ?? storeShippingConfig.default
+  if (store === "canshop" && storeTotal >= config.freeThreshold) return 330
+  return storeTotal >= config.freeThreshold ? 0 : config.fee
+}
+
 export function getStoreKey(name: string): string | undefined {
   return storeList.find((s) => s.name === name)?.key;
 }

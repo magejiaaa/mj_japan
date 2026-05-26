@@ -12,8 +12,7 @@ import {
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { useState, useEffect } from "react"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { storeShippingConfig } from "@/lib/storeConfig"
-import { getStoreName } from "@/lib/storeConfig"
+import { getStoreName, getDomesticShippingFee } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
@@ -23,23 +22,13 @@ interface CalculationResultProps {
   storeAmounts: Map<string, number>
   checkedIds: Set<string>
   onToggleCheck: (id: string) => void
+  itemPrices: Map<string, { shopeePrice: number; otherPrice: number }>
 }
 
-export default function CalculationResult({ products, summary, exchangeRate, storeAmounts, checkedIds, onToggleCheck }: CalculationResultProps) {
+export default function CalculationResult({ products, summary, exchangeRate, storeAmounts, checkedIds, onToggleCheck, itemPrices }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
   // 只取打勾的商品
   const checkedProducts = products.filter((p) => p.price > 0 && checkedIds.has(p.id))
-
-  const getDomesticShippingFee = (store: string, storeTotal: number) => {
-    const config = storeShippingConfig[store] || storeShippingConfig.default
-    // 如果是canshop達免運標準，則運費330日幣
-    if (store === "canshop" && storeTotal >= config.freeThreshold) {
-      return 330;
-    } else {
-      // 如果是其他店家達免運標準，則運費0日幣
-      return storeTotal >= config.freeThreshold ? 0 : config.fee;
-    }
-  };
 
   // 計算國際運費，"其他"類別只計算一次固定200元
   const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
@@ -135,6 +124,15 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
         } else {
           text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
         }
+        // 加入分攤單品價格
+        const priceInfo = itemPrices.get(product.id)
+        if (priceInfo) {
+          if (summary.selectedPlatform === "shopee") {
+            text += `   【蝦皮單品價】: ${formatCurrency(priceInfo.shopeePrice, "TWD")}\n`
+          } else {
+            text += `   【賣貨便/iopen單品價】: ${formatCurrency(priceInfo.otherPrice, "TWD")}\n`
+          }
+        }
       }
     })
 
@@ -173,11 +171,10 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
               const categoryInfo = getCategoryInfo(product.category)
               const storeName = getStoreName(product.store)
 
-              // 計算此商品佔總額的比例，分配最終價格
-              const productSubtotalTWD = product.price * product.quantity * exchangeRate
-              const proportion = summary.totalTWD > 0 ? productSubtotalTWD / summary.totalTWD : 0
-              const allocatedShopeePrice = Math.round(summary.shopeePrice * proportion)
-              const allocatedOtherPrice = Math.round(summary.otherPlatformPrice * proportion)
+              // 從父元件傳入的分攤價格
+              const priceInfo = itemPrices.get(product.id)
+              const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
+              const allocatedOtherPrice = priceInfo?.otherPrice ?? 0
 
               const isChecked = checkedIds.has(product.id)
 

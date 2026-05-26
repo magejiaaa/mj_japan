@@ -12,7 +12,8 @@ import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { ProductItem, CalculationSummary } from "@/lib/types"
 import { Instagram, Facebook, ArrowUp } from "lucide-react"
-import { storeShippingConfig } from "@/lib/storeConfig"
+import { storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
+import { getCategoryInfo } from "@/lib/categoryMap"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
@@ -43,6 +44,7 @@ export default function Home() {
     grandTotal: 0,
     selectedPlatform: "myship", // 默認賣貨便
   })
+  const [itemPrices, setItemPrices] = useState<Map<string, { shopeePrice: number; otherPrice: number }>>(new Map())
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
   // 只計算勾選的價格(預設勾選)
@@ -58,7 +60,7 @@ export default function Home() {
         new URLSearchParams({
           dataset: 'TaiwanExchangeRate',
           data_id: 'JPY',
-          start_date: '2025-03-01'
+          start_date: '2026-03-01'
         })
       )
       
@@ -155,30 +157,12 @@ export default function Home() {
       }
     })
     
-    // 判斷是否免運費的輔助函數
-    const isFreeShipping = (store: string, storeTotal: number): boolean => {
-      const config = storeShippingConfig[store] || storeShippingConfig.default
-      return storeTotal >= config.freeThreshold
-    }
-    // 然後根據每家店的總金額來判斷是否免運費
+    // 根據每家店的總金額計算國內運費
     processedStores.forEach((storeTotal, store) => {
-      const config = storeShippingConfig[store] || storeShippingConfig.default
-
-      if (store === "other") {
-        // 對於"其他"店家，尋找該店家的第一個商品，使用其自訂運費
-        const productWithCustomFee = filteredProducts.find((p) => p.store === "other")
-        if (productWithCustomFee) {
-          totalDomesticShippingJPY += productWithCustomFee.customShippingFee || 0
-        }
-      }
-      // 如果是canshop達免運標準，則運費330日幣
-      if (store === "canshop" && storeTotal >= config.freeThreshold) {
-        totalDomesticShippingJPY += 330
-      } else if (isFreeShipping(store, storeTotal)) {
-        totalDomesticShippingJPY += 0
-      } else {
-        totalDomesticShippingJPY += config.fee
-      }
+      const customFee = store === "other"
+        ? filteredProducts.find((p) => p.store === "other")?.customShippingFee
+        : undefined
+      totalDomesticShippingJPY += getDomesticShippingFee(store, storeTotal, customFee)
     })
 
     // 計算國際運費（台幣）- 每件商品都要計算，但"其他"類別只計算一次
@@ -191,33 +175,7 @@ export default function Home() {
       if (product.category === "other") return
       if (product.price <= 0) return
 
-      let internationalShippingPerItem = 0
-      switch (product.category) {
-        case "underwear":
-          internationalShippingPerItem = 80
-          break
-        case "clothing":
-          internationalShippingPerItem = 100
-          break
-        case "coat":
-          internationalShippingPerItem = 200
-          break
-        case "jeans":
-          internationalShippingPerItem = 300
-          break
-        case "shoes":
-          internationalShippingPerItem = 400
-          break
-        case "shortBoots":
-          internationalShippingPerItem = 500
-          break
-        case "longBoots":
-          internationalShippingPerItem = 600
-          break
-        default:
-          internationalShippingPerItem = 200
-      }
-
+      const internationalShippingPerItem = getCategoryInfo(product.category).fee
       totalInternationalShipping += internationalShippingPerItem * product.quantity
     })
 
@@ -233,6 +191,49 @@ export default function Home() {
 
     // 計算其他平台價格 (蝦皮價格/1.175)
     const otherPlatformPrice = Math.ceil(shopeePrice / 1.175)
+
+    // 計算每個商品的分攤價格
+    const newItemPrices = new Map<string, { shopeePrice: number; otherPrice: number }>()
+
+    // 先算每個 store 的總金額，用來分攤國內運費
+    const storeTotalMap = new Map<string, number>()
+    filteredProducts.forEach((product) => {
+      if (product.price <= 0) return
+      const amt = product.price * product.quantity
+      storeTotalMap.set(product.store, (storeTotalMap.get(product.store) || 0) + amt)
+    })
+
+    filteredProducts.forEach((product) => {
+      if (product.price <= 0) return
+
+      // 1. 商品成本（台幣）
+      const itemCostTWD = product.price * product.quantity * exchangeRate
+
+      // 2. 分攤國內運費（按該店的商品金額比例）
+      const storeTotal = storeTotalMap.get(product.store) || 0
+      // 取得該 store 實際國內運費
+      const storeDomesticShippingJPY = getDomesticShippingFee(product.store, storeTotal, product.customShippingFee)
+      const itemStoreProportion = storeTotal > 0 ? (product.price * product.quantity) / storeTotal : 0
+      const itemDomesticShippingTWD = storeDomesticShippingJPY * exchangeRate * itemStoreProportion
+
+      // 3. 國際運費（按類別固定，不分攤）
+      const intlShippingPerItem = getCategoryInfo(product.category).fee
+      const itemIntlShipping = intlShippingPerItem * product.quantity
+
+      // 4. 商品小計
+      const itemSubtotal = itemCostTWD + itemDomesticShippingTWD + itemIntlShipping
+
+      // 5. 各平台售價
+      const rawShopee = itemSubtotal / 0.815
+      const itemShopeePrice = Math.ceil(rawShopee / 20) * 20
+      const itemOtherPrice = Math.ceil(itemShopeePrice / 1.175)
+
+      newItemPrices.set(product.id, {
+        shopeePrice: itemShopeePrice,
+        otherPrice: itemOtherPrice,
+      })
+    })
+    setItemPrices(newItemPrices)
 
     setSummary({
       totalJPY,
@@ -262,7 +263,7 @@ export default function Home() {
         price: 0,
         quantity: 1,
         category: "clothing",
-        customShippingFee: 0, // 新增自定义运费字段
+        customShippingFee: 0, // 新增自訂運費字段
       },
     ])
     // 滾動至新增的商品，手機版不需要
@@ -353,6 +354,7 @@ export default function Home() {
                   storeAmounts={getStoreAmounts(products)}
                   checkedIds={checkedIds}
                   onToggleCheck={toggleCheck}
+                  itemPrices={itemPrices}
                 />
 
                 <div className="flex justify-center items-center gap-2 mt-8">
@@ -383,19 +385,12 @@ export default function Home() {
 
   // 輔助函數：取得每個店家的總金額
   function getStoreAmounts(products: ProductItem[]): Map<string, number> {
-    const storeAmounts = new Map<string, number>()
-
-    products.forEach((product) => {
-      if (product.price <= 0) return
-      const amount = product.price * product.quantity
-      if (storeAmounts.has(product.store)) {
-        storeAmounts.set(product.store, storeAmounts.get(product.store)! + amount)
-      } else {
-        storeAmounts.set(product.store, amount)
-      }
+    const map = new Map<string, number>()
+    products.forEach((p) => {
+      if (p.price <= 0) return
+      map.set(p.store, (map.get(p.store) ?? 0) + p.price * p.quantity)
     })
-
-    return storeAmounts
+    return map
   }
 }
 
