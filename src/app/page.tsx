@@ -203,6 +203,12 @@ export default function Home() {
       storeTotalMap.set(product.store, (storeTotalMap.get(product.store) || 0) + amt)
     })
 
+    // 計算「其他」類別商品的總數量，用來分攤 200 元固定運費
+    const otherCategoryProducts = filteredProducts.filter((p) => p.category === "other" && p.price > 0)
+    const totalOtherQuantity = otherCategoryProducts.reduce((sum, p) => sum + p.quantity, 0)
+
+    // 第一輪：計算每個商品的未進位小計（用來決定分攤比例）
+    const itemSubtotals = new Map<string, number>()
     filteredProducts.forEach((product) => {
       if (product.price <= 0) return
 
@@ -211,22 +217,46 @@ export default function Home() {
 
       // 2. 分攤國內運費（按該店的商品金額比例）
       const storeTotal = storeTotalMap.get(product.store) || 0
-      // 取得該 store 實際國內運費
       const storeDomesticShippingJPY = getDomesticShippingFee(product.store, storeTotal, product.customShippingFee)
       const itemStoreProportion = storeTotal > 0 ? (product.price * product.quantity) / storeTotal : 0
       const itemDomesticShippingTWD = storeDomesticShippingJPY * exchangeRate * itemStoreProportion
 
-      // 3. 國際運費（按類別固定，不分攤）
-      const intlShippingPerItem = getCategoryInfo(product.category).fee
-      const itemIntlShipping = intlShippingPerItem * product.quantity
+      // 3. 國際運費：「其他」類別固定 200 元依數量比例分攤，其他類別按件計算
+      let itemIntlShipping: number
+      if (product.category === "other") {
+        itemIntlShipping = totalOtherQuantity > 0 ? (200 * product.quantity) / totalOtherQuantity : 0
+      } else {
+        const intlShippingPerItem = getCategoryInfo(product.category).fee
+        itemIntlShipping = intlShippingPerItem * product.quantity
+      }
 
-      // 4. 商品小計
-      const itemSubtotal = itemCostTWD + itemDomesticShippingTWD + itemIntlShipping
+      itemSubtotals.set(product.id, itemCostTWD + itemDomesticShippingTWD + itemIntlShipping)
+    })
 
-      // 5. 各平台售價
-      const rawShopee = itemSubtotal / 0.815
-      const itemShopeePrice = Math.ceil(rawShopee / 20) * 20
-      const itemOtherPrice = Math.ceil(itemShopeePrice / 1.175)
+    // 第二輪：依各商品小計佔 grandTotal 的比例，從已進位的總價反推各商品售價
+    // 最後一件商品補足差額，確保加總 = 總價，消除進位誤差
+    const validProducts = filteredProducts.filter((p) => p.price > 0)
+    let remainingShopee = shopeePrice
+    let remainingOther = otherPlatformPrice
+    validProducts.forEach((product, idx) => {
+      const subtotal = itemSubtotals.get(product.id) ?? 0
+      const isLast = idx === validProducts.length - 1
+
+      let itemShopeePrice: number
+      let itemOtherPrice: number
+
+      if (isLast) {
+        // 最後一件直接用剩餘差額，確保加總精確
+        itemShopeePrice = remainingShopee
+        itemOtherPrice = remainingOther
+      } else {
+        // 按比例分攤，取最近的 20 倍數（蝦皮）或整數（其他）
+        const proportion = grandTotal > 0 ? subtotal / grandTotal : 0
+        itemShopeePrice = Math.round((shopeePrice * proportion) / 20) * 20
+        itemOtherPrice = Math.round(otherPlatformPrice * proportion)
+        remainingShopee -= itemShopeePrice
+        remainingOther -= itemOtherPrice
+      }
 
       newItemPrices.set(product.id, {
         shopeePrice: itemShopeePrice,
