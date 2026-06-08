@@ -321,7 +321,7 @@ export default function Home() {
   return (
     <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
       <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
-        <div className="min-h-screen bg-[#F5B5B5] dark:bg-[#3D2A2D] text-[#F8F0E3]">
+        <div className="min-h-screen bg-[var(--bg-page)] dark:bg-[var(--bg-page)] text-[var(--text-primary)]">
           <div className="container mx-auto px-0 pb-8">
             <Header toggleDarkMode={toggleDarkMode} darkMode={darkMode} />
 

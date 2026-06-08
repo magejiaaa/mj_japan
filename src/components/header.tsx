@@ -18,15 +18,15 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
   }
 
   return (
-    <header className="flex flex-col items-center justify-center text-center bg-[#F9F5EB] dark:bg-[#3D2A2D] pt-8 text-[#3D2A2D] dark:text-[#F8F0E3] rounded-b-2xl shadow-lg">
+    <header className="flex flex-wrap items-center justify-center text-center">
       <div className="relative w-full flex justify-center">
-        <div className="absolute px-4 right-0 top-1/2 -translate-y-1/2 w-full md:w-auto flex justify-between md:justify-center gap-2">
-          <button className="border border-[#3D2A2D] hover:bg-[#F5B5B5]/20 p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
+        <div className="px-4 w-full flex justify-between gap-2">
+          <button className="border border-[var(--border-default)] hover:bg-[var(--color-primary-hover)]/20 p-2 w-max rounded-md text-sm" onClick={scrollToBottom}>!(•̀ᴗ•́)و ̑̑代購流程</button>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleDarkMode}
-            className="text-[#3D2A2D] hover:bg-[#F5B5B5]/20 dark:hover:bg-[#3D2A2D]/50"
+            className="text-[var(--text-primary)] hover:bg-[var(--color-primary-hover)]/20 dark:hover:bg-[var(--color-primary-hover)]/50"
           >
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             <span className="sr-only">切換深色模式</span>
@@ -34,13 +34,25 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
         </div>
       </div>
 
-      <div className="mt-4 mb-2">
+      <div className="mt-4 mb-2 w-1/2">
         <a href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer">
           <h1 className="m-3 md:m-6 rounded-2xl overflow-hidden">
             <span className="hidden">秘境日本代購自助報價</span>
             <img className="h-[150px] md:h-[300px] object-cover" src="/banner.png" alt="" />
           </h1>
         </a>
+      </div>
+      <div className="w-1/2 p-4 text-left">
+        <div className="bg-[var(--bg-card)] dark:bg-[var(--bg-card)] rounded-lg border border-[var(--border-default)] p-4 mb-4">
+          無提供代購的網站：
+          <ol className="list-decimal list-inside my-2">
+            <li>yahoo購物jp</li>
+            <li>mercari</li>
+            <li>square-enix store</li>
+          </ol>
+          有些品項在多平台有販售，可以找找樂天jp或amazon
+        </div>
+        <p className="text-[#a42c2c] text-lg font-bold">zozotown、can online shop匯率請依照IG、粉絲專頁公告進行編輯‼️(目前0.23)</p>
       </div>
     </header>
   )
