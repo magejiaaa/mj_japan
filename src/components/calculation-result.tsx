@@ -1,18 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import { Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from "@/components/ui/field"
-import type { ProductItem, CalculationSummary } from "@/lib/types"
-import { useState, useEffect } from "react"
+import type { CalculationSummary, ProductItem } from "@/lib/types"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { getStoreName, getDomesticShippingFee } from "@/lib/storeConfig"
+import { getStoreName, storeShippingConfig } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
@@ -25,26 +20,23 @@ interface CalculationResultProps {
   itemPrices: Map<string, { shopeePrice: number; otherPrice: number }>
 }
 
-export default function CalculationResult({ products, summary, exchangeRate, storeAmounts, checkedIds, onToggleCheck, itemPrices }: CalculationResultProps) {
+const platformNameMap = {
+  shopee: "蝦皮",
+  myship: "賣貨便",
+  iopen: "iopen mall",
+}
+
+export default function CalculationResult({
+  products,
+  summary,
+  exchangeRate,
+  storeAmounts,
+  checkedIds,
+  onToggleCheck,
+}: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
-  // 只取打勾的商品
-  const checkedProducts = products.filter((p) => p.price > 0 && checkedIds.has(p.id))
+  const checkedProducts = products.filter((product) => product.price > 0 && checkedIds.has(product.id))
 
-  // 計算國際運費，"其他"類別只計算一次固定200元
-  const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
-    if (product.category === "other") {
-      // 如果是"其他"類別且已經處理過，返回0
-      if (otherCategoryProcessed) {
-        return 0
-      }
-      // 否則回傳固定200元，不考慮數量
-      return 200
-    }
-
-    // 其他類別正常計算
-    const categoryInfo = getCategoryInfo(product.category)
-    return categoryInfo.fee * product.quantity
-  }
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("zh-TW", {
       style: "currency",
@@ -54,98 +46,50 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     }).format(amount)
   }
 
-  const getShopName = (store: string) => {
-    switch (store) {
-      case "shopee":
-        return "蝦皮"
-      case "myship":
-        return "賣貨便"
-      case "iopen":
-        return "iopen mall"
-      default:
-        return "其他平台"
-    }
+  const getDomesticShippingFee = (store: string, storeTotal: number) => {
+    const config = storeShippingConfig[store] || storeShippingConfig.default
+    if (store === "canshop" && storeTotal >= config.freeThreshold) return 330
+    return storeTotal >= config.freeThreshold ? 0 : config.fee
   }
+
+  const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
+    if (product.category === "other") return otherCategoryProcessed ? 0 : 200
+    return getCategoryInfo(product.category).fee * product.quantity
+  }
+
   const copyToClipboard = () => {
-    // 只複製打勾的商品
     if (checkedProducts.length === 0) {
-      alert("請至少勾選一項商品")
+      alert("請選擇至少一個商品")
       return
     }
 
-    let text = "===== 秘境好物分享訂單 =====\n\n"
-
-    // 添加匯率訊息
-    text += `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣\n\n`
-    // 添加選擇的平台訊息
-    text += `下單平台: ${getShopName(summary.selectedPlatform)}\n`
-
-    // 用於追踪已計算運費的店家
-    const processedStores = new Map<string, { fee: number; products: string[]; total: number }>()
-    // 用於追蹤"其他"類別是否已處理
     let otherCategoryProcessed = false
-    // 添加產品詳情
+    let text = "===== 秘境日本代購估價資料 =====\n\n"
+    text += `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣\n`
+    text += `下單平台: ${platformNameMap[summary.selectedPlatform]}\n\n`
     text += "商品:\n"
+
     checkedProducts.forEach((product, index) => {
-      if (product.price > 0) {
-        const categoryInfo = getCategoryInfo(product.category)
-        const storeName = getStoreName(product.store)
-        const internationalShippingFee = getInternationalShippingFee(product, otherCategoryProcessed)
-        
-        // 如果是"其他"類別且有運費，標記為已處理
-        if (product.category === "other" && internationalShippingFee > 0) {
-          otherCategoryProcessed = true
-        }
-        const twdPrice = product.price * exchangeRate
+      const categoryInfo = getCategoryInfo(product.category)
+      const storeName = getStoreName(product.store)
+      const internationalShippingFee = getInternationalShippingFee(product, otherCategoryProcessed)
+      if (product.category === "other" && internationalShippingFee > 0) otherCategoryProcessed = true
 
-        // 收集每個店家的商品
-        if (!processedStores.has(product.store)) {
-          processedStores.set(product.store, {
-            fee: getDomesticShippingFee(product.store, storeAmounts.get(product.store) || 0),
-            products: [`商品 #${index + 1}`],
-            total: product.price * product.quantity,
-          })
-        } else {
-          const storeInfo = processedStores.get(product.store)!
-          storeInfo.products.push(`商品 #${index + 1}`)
-          storeInfo.total += product.price * product.quantity
-          processedStores.set(product.store, storeInfo)
-        }
-
-        text += `${index + 1}. ${product.url || "[未提供網址]"}\n`
-        text += `   店家: ${storeName}\n`
-        text += `   價格: ${formatCurrency(product.price, "JPY")}\n`
-        text += `   顏色尺寸: ${product.color}\n`
-        text += `   類別: ${categoryInfo.name}\n`
-        text += `   數量: ${product.quantity}\n`
-        // 對於"其他"類別，特別說明國際運費
-        if (product.category === "other") {
-          text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (固定運費)\n`
-        } else {
-          text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
-        }
-        // 加入分攤單品價格
-        const priceInfo = itemPrices.get(product.id)
-        if (priceInfo) {
-          if (summary.selectedPlatform === "shopee") {
-            text += `   【蝦皮單品價】: ${formatCurrency(priceInfo.shopeePrice, "TWD")}\n`
-          } else {
-            text += `   【賣貨便/iopen單品價】: ${formatCurrency(priceInfo.otherPrice, "TWD")}\n`
-          }
-        }
-      }
+      text += `${index + 1}. ${product.url || "[尚未填寫網址]"}\n`
+      text += `   日本店家: ${storeName}\n`
+      text += `   價格: ${formatCurrency(product.price, "JPY")}\n`
+      text += `   顏色尺寸: ${product.color || "-"}\n`
+      text += `   類別: ${categoryInfo.name}\n`
+      text += `   數量: ${product.quantity}\n`
+      if (product.store === "other") text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
+      text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n\n`
     })
 
-    // 添加摘要
     text += "訂單摘要:\n"
     text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")} (${formatCurrency(summary.totalTWD, "TWD")})\n`
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-
-    // 添加選擇的平台的最終價格
-    const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
-
-    text += `【${summary.selectedPlatform === "shopee" ? "蝦皮" : "賣貨便、iopen"}】最終價格: ${formatCurrency(finalPrice, "TWD")}\n`
+    text += `平台總價: ${formatCurrency(summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice, "TWD")}\n`
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
@@ -153,169 +97,146 @@ export default function CalculationResult({ products, summary, exchangeRate, sto
     })
   }
 
+  const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
+
   return (
-    <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
+    <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">計算結果</CardTitle>
+        <CardTitle className="text-xl">計算結果</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="font-medium">商品詳情</h3>
-            {products[0].price <= 0 && (
-              <div className="text-sm text-black/60 dark:text-white/60">尚無商品資料</div>
-            )}
+          <section className="space-y-3">
+            <h3 className="font-bold">商品詳情</h3>
+            {products.every((product) => product.price <= 0) && <div className="text-sm text-[var(--text-secondary)]">尚無商品資料</div>}
+
             {products.map((product, index) => {
               if (product.price <= 0) return null
-
               const categoryInfo = getCategoryInfo(product.category)
               const storeName = getStoreName(product.store)
-
-              // 從父元件傳入的分攤價格
-              const priceInfo = itemPrices.get(product.id)
-              const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
-              const allocatedOtherPrice = priceInfo?.otherPrice ?? 0
-
+              const productSubtotalTWD = product.price * product.quantity * exchangeRate
+              const proportion = summary.totalTWD > 0 ? productSubtotalTWD / summary.totalTWD : 0
+              const allocatedShopeePrice = Math.round(summary.shopeePrice * proportion)
+              const allocatedOtherPrice = Math.round(summary.otherPlatformPrice * proportion)
               const isChecked = checkedIds.has(product.id)
 
               return (
-                <FieldLabel key={product.id} className="bg-[#F9F5EB] dark:bg-[#3D2A2D] rounded-md">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      checked={isChecked}
-                      onCheckedChange={() => onToggleCheck(product.id)}
-                    ></Checkbox>
-                    <FieldContent>
-                    <div className="flex justify-between items-start">
-                      <div className="text-sm font-medium text-black dark:text-white">
-                        商品 #{index + 1}
+                <label
+                  key={product.id}
+                  className="block cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-ultra-light)] p-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox checked={isChecked} onCheckedChange={() => onToggleCheck(product.id)} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="font-medium">商品 #{index + 1}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">
+                          {storeName} | {categoryInfo.name} ({categoryInfo.weight})
+                        </div>
                       </div>
-                      <div className="text-xs text-black/60 dark:text-white/60">
-                        {storeName} | {categoryInfo.name} ({categoryInfo.weight})
+                      <div className="mt-2 truncate text-xs text-[var(--text-secondary)]">{product.url || "[尚未填寫網址]"}</div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-[var(--text-secondary)]">價格：</span>
+                          {formatCurrency(product.price, "JPY")}
+                        </div>
+                        <div>
+                          <span className="text-[var(--text-secondary)]">數量：</span>
+                          {product.quantity}
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-[var(--text-secondary)]">顏色尺寸：</span>
+                          {product.color || "-"}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-2 text-xs text-black/80 dark:text-white/80 truncate">
-                      {product.url || "[未提供網址]"}
+                      {isChecked && (
+                        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-default)] pt-3 text-xs">
+                          <div className={summary.selectedPlatform === "shopee" ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
+                            <div>蝦皮估價：</div>
+                            <div>{formatCurrency(allocatedShopeePrice, "TWD")}</div>
+                          </div>
+                          <div className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
+                            <div>賣貨便、iopen 估價：</div>
+                            <div>{formatCurrency(allocatedOtherPrice, "TWD")}</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-black dark:text-white">
-                      <div>
-                        <span className="text-black/60 dark:text-white/60">價格:</span>{" "}
-                        {formatCurrency(product.price, "JPY")}
-                      </div>
-                      <div>
-                        <span className="text-black/60 dark:text-white/60">數量:</span> {product.quantity}
-                      </div>
-                      <div>
-                        <span className="text-black/60 dark:text-white/60">顏色尺寸:</span> {product.color}
-                      </div>
-                    </div>
-
-                    {/* 分攤後的最終單品價格 */}
-                    {isChecked && (
-                    <div className="mt-3 pt-2 border-t border-black/10 dark:border-white/10 grid grid-cols-2 gap-2 text-xs">
-                      <div className={summary.selectedPlatform === "shopee" ? "font-bold text-[#f36060] dark:text-[#F9F5EB]" : "text-black/70 dark:text-white/70"}>
-                        <div>蝦皮單價:</div>
-                        <div>{formatCurrency(allocatedShopeePrice, "TWD")}</div>
-                      </div>
-                      <div className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-[#f36060] dark:text-[#F9F5EB]" : "text-black/70 dark:text-white/70"}>
-                        <div>賣貨便、iopen單價:</div>
-                        <div>{formatCurrency(allocatedOtherPrice, "TWD")}</div>
-                      </div>
-                    </div>
-                    )}
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
+                  </div>
+                </label>
               )
             })}
-          </div>
+          </section>
 
-          <div className="border-t border-[#F8F0E3]/20">
-            <h3 className="font-medium mb-3">訂單摘要</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>商品總額 (日幣):</span>
+          <section className="border-t border-[var(--border-default)] pt-5">
+            <h3 className="mb-4 font-bold">訂單摘要</h3>
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <span>商品總額（日幣）：</span>
                 <span>{formatCurrency(summary.totalJPY, "JPY")}</span>
               </div>
-              <div className="flex justify-between">
-                <span>日本國內運費 (日幣):</span>
+              <div className="flex justify-between gap-4">
+                <span>日本國內運費（日幣）：</span>
                 <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
               </div>
-              
-              {/* 依店家顯示運費明細 */}
+
               {Array.from(storeAmounts.entries()).map(([store, storeTotal]) => {
-                const storeProducts = products.filter((p) => p.store === store && p.price > 0)
+                const storeProducts = products.filter((product) => product.store === store && product.price > 0)
                 if (storeProducts.length === 0) return null
                 const firstProduct = storeProducts[0]
-
-                // 如果有自訂運費，直接使用自訂運費
-                const customFee = firstProduct.customShippingFee
-                const domesticShippingFee = (store === "other" && customFee !== undefined)
-                  ? customFee
-                  : getDomesticShippingFee(store, storeTotal)
-                const domesticShippingTWD = domesticShippingFee * exchangeRate
+                const domesticShippingFee =
+                  store === "other" && firstProduct.customShippingFee !== undefined
+                    ? firstProduct.customShippingFee
+                    : getDomesticShippingFee(store, storeTotal)
 
                 return (
                   <ShippingBreakdown
                     key={store}
                     domesticShippingJPY={domesticShippingFee}
-                    domesticShippingTWD={domesticShippingTWD}
+                    domesticShippingTWD={domesticShippingFee * exchangeRate}
                     store={store}
                     storeTotal={storeTotal}
                     isCustomShipping={store === "other" && firstProduct.customShippingFee !== undefined}
                   />
                 )
               })}
-              {summary.totalDomesticShippingJPY === 0 && (
-                <div className="text-green-600 dark:text-green-400 text-xs italic">*全部店家已達免運標準</div>
-              )}
-              <div className="flex justify-between">
-                <span>國際運費 (台幣):</span>
+
+              {summary.totalDomesticShippingJPY === 0 && <div className="text-xs italic text-green-600">*全館店家已達免運標準</div>}
+
+              <div className="flex justify-between gap-4">
+                <span>國際運費（台幣）：</span>
                 <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
               </div>
-              {products.some((p) => p.category === "other" && p.price > 0) && (
-                <div className="text-xs italic">*"其他"類別商品國際運費固定為200元，多退少補</div>
-              )}
-              {/* 顯示兩個平台的價格 */}
-              <h3 className="font-medium mt-4 mb-3 border-t border-[#F8F0E3]/20 pt-2">
-                含稅下單價格 
-                <span className="text-xs text-black/60 dark:text-white/60">包含營業稅、關稅與包材費用</span>
-              </h3>
-              <div className="flex justify-between items-center">
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>
-                  蝦皮價格 (含手續費):
-                </span>
-                <span className={summary.selectedPlatform === "shopee" ? "font-bold text-base" : ""}>
-                  {formatCurrency(summary.shopeePrice, "TWD")}
-                </span>
+              <div className="flex justify-between gap-4 font-bold">
+                <span>蝦皮價值（含手續費）：</span>
+                <span>{formatCurrency(summary.shopeePrice, "TWD")}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>
-                  賣貨便、iopen下單費用:
-                </span>
-                <span className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-base" : ""}>
-                  {formatCurrency(summary.otherPlatformPrice, "TWD")}
-                </span>
+              <div className="flex justify-between gap-4 text-base font-bold">
+                <span>賣貨便、iopen 下單費用：</span>
+                <span>{formatCurrency(summary.otherPlatformPrice, "TWD")}</span>
               </div>
-
-              {/* 顯示選擇的平台 */}
-              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-[#F8F0E3]/20 text-[#a42c2c] dark:text-[#F9F5EB]">
-                <span>選擇下單平台:</span>
-                <span>{getShopName(summary.selectedPlatform)}</span>
+              <div className="flex justify-between gap-4 pt-3 font-bold text-[var(--color-primary-hover)]">
+                <span>選擇下單平台：</span>
+                <span>{platformNameMap[summary.selectedPlatform]}</span>
+              </div>
+              <div className="flex justify-between gap-4 text-lg font-bold">
+                <span>應付金額：</span>
+                <span>{formatCurrency(finalPrice, "TWD")}</span>
               </div>
             </div>
-          </div>
-          <Button
-            onClick={copyToClipboard}
-            className="w-full bg-[#F9F5EB] hover:bg-[#F9F5EB]/80 text-black dark:bg-[#3D2A2D] dark:hover:bg-[#3D2A2D]/80 dark:text-white"
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            {copied ? "已複製到剪貼簿！" : "一鍵複製"}
+          </section>
+
+          <Button onClick={copyToClipboard} className="w-full bg-[var(--color-primary-light)] text-[var(--color-primary-hover)] hover:bg-[var(--color-primary)] hover:text-white">
+            <Copy className="mr-2 h-4 w-4" />
+            {copied ? "已複製" : "一鍵複製"}
           </Button>
-          <p>本網站只提供計算價格並複製的功能，無法下單！<br/>
-          需要將複製的內容貼到IG/FB訊息欄，感謝配合🫡</p>
+
+          <p className="leading-7">
+            本網站只提供計算價格並複製的功能，無法下單！
+            <br />
+            需要將複製的內容貼到 IG/FB 訊息欄，感謝配合
+          </p>
         </div>
       </CardContent>
     </Card>
