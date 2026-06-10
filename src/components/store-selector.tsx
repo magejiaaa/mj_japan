@@ -12,7 +12,7 @@ interface StoreSelectorProps {
 export default function StoreSelector({ id, value, onChange }: StoreSelectorProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="bg-white dark:bg-[#2D1A1D] text-black dark:text-white">
+      <SelectTrigger id={id} className="border-[var(--border-input)] bg-white text-[var(--text-primary)] dark:bg-[var(--color-primary-ultra-light)]">
         <SelectValue placeholder="選擇店家" />
       </SelectTrigger>
       <SelectContent>

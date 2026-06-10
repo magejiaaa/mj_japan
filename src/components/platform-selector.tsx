@@ -9,9 +9,15 @@ interface PlatformSelectorProps {
   onPlatformChange: (platform: "shopee" | "iopen" | "myship") => void
 }
 
+const platforms = [
+  { value: "shopee", label: "蝦皮（手續費 17.5%）" },
+  { value: "myship", label: "賣貨便（台灣運費 +$38）" },
+  { value: "iopen", label: "iopen mall（台灣運費 +$38｜可領免運券）" },
+] as const
+
 export default function PlatformSelector({ selectedPlatform, onPlatformChange }: PlatformSelectorProps) {
   return (
-    <Card className="bg-[#FADCD9] dark:bg-[#4D3A3D] border-none shadow-md">
+    <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">選擇下單平台</CardTitle>
       </CardHeader>
@@ -19,31 +25,18 @@ export default function PlatformSelector({ selectedPlatform, onPlatformChange }:
         <RadioGroup
           value={selectedPlatform}
           onValueChange={(value) => onPlatformChange(value as "shopee" | "iopen" | "myship")}
-          className="flex flex-col space-y-2 p-4 bg-[#F9F5EB] dark:bg-[#3D2A2D] rounded-lg shadow-sm"
+          className="space-y-4 pt-4"
         >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="shopee" id="shopee" className="text-[#F5B5B5] border-[#F5B5B5]" />
-            <Label htmlFor="shopee" className="text-black dark:text-white cursor-pointer">
-              蝦皮 (手續費 17.5%)
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="myship" id="myship" className="text-[#F5B5B5] border-[#F5B5B5]" />
-            <Label htmlFor="myship" className="text-black dark:text-white cursor-pointer">
-              賣貨便 (台灣運費+$38)
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="iopen" id="iopen" className="text-[#F5B5B5] border-[#F5B5B5]" />
-            <Label htmlFor="iopen" className="text-black dark:text-white cursor-pointer">
-              iopen mall (台灣運費+$38｜可領免運券)
-            </Label>
-          </div>
+          {platforms.map((platform) => (
+            <div key={platform.value} className="flex items-center space-x-3">
+              <RadioGroupItem value={platform.value} id={platform.value} className="border-[var(--color-primary)] text-[var(--color-primary)]" />
+              <Label htmlFor={platform.value} className="cursor-pointer text-[var(--text-primary)]">
+                {platform.label}
+              </Label>
+            </div>
+          ))}
         </RadioGroup>
       </CardContent>
     </Card>
   )
 }
-
