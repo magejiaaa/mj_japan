@@ -25,41 +25,44 @@ const descriptions: Record<string, CategoryDescription> = {
   underwear: {
     description: "這個分類適用於極為輕薄的衣物，例如內衣、細肩帶內搭或超輕質料的短T等。這類商品布料少、材質輕巧，幾乎不佔體積，適合單獨購買時節省運費。",
     examples: [
-      { name: "內衣褲", image: "/underwear.png" },
+      { name: "內衣褲", image: "/underwear.jpg" },
       {
         name:"小可愛",
-        image: "https://cdn.grail.bz/images/goods/d/dk1124/dk1124_v9.jpg"
+        image: "/braTop.png"
       }, 
-      { name: "小型配件", image: "/other.jpg" }, 
+      { name: "配件", image: "/accessories.jpg" }, 
       {
         name:"透膚內搭",
-        image: "https://cdn.grail.bz/images/goods/d/gm622/gm622_v7.jpg"
+        image: "/gm622_v7.jpg"
       }
     ],
   },
   clothing: {
     description: "屬於日常基本款的薄料衣物都適用於此分類，例如棉質或雪紡材質的上衣、裙子，以及薄長袖等。這個重量大多能涵蓋一般輕便穿搭，但不包含牛仔材質的裙子或厚棉質的上衣。",
     examples: [
-      { name: "短袖上衣", image: "https://rojita.itembox.design/product/034/000000003423/000000003423-03-l.jpg?t=20250404132342" }, 
+      { 
+        name: "短袖上衣", 
+        image: "/000000003423-03-l.jpg" 
+      }, 
       {
         name:"短裙",
-        image: "https://rojita.itembox.design/product/034/000000003422/000000003422-03-l.jpg?t=20250404132342"
+        image: "/000000003422-03-l.jpg"
       }, 
       {
         name:"薄長裙",
-        image: "https://cdn.grail.bz/images/goods/d/dk1092/dk1092_v1.jpg"
+        image: "/dk1092_v1.jpg"
       }, 
       {
         name:"長袖襯衫",
-        image: "https://cdn.grail.bz/images/goods/d/dk1145/dk1145_v1.jpg"
+        image: "/dk1145_v1.jpg"
       }, 
       {
         name:"薄針織",
-        image: "https://cdn.grail.bz/images/goods/d/an1509/an1509_v7.jpg"
+        image: "/an1509_v7.jpg"
       }, 
       {
-        name:"透膚長袖外搭",
-        image: "https://cdn.grail.bz/images/goods/d/fo1905/fo1905_v1.jpg"
+        name:"透膚長袖外搭+小可愛",
+        image: "/fo1905_v1.jpg"
       }
     ],
   },
@@ -68,93 +71,93 @@ const descriptions: Record<string, CategoryDescription> = {
     examples: [
       {
         name:"薄西裝外套",
-        image: "https://cdn.grail.bz/images/goods/d/tu1418/tu1418_v2.jpg"
+        image: "/tu1418_v2.jpg"
       }, 
       {
         name:"長袖外套",
-        image: "https://acdcrag.com/cdn/shop/files/jr-481-122_0_600x.jpg?v=1687759668"
+        image: "/jr-481-122_0_600x.jpg"
       },
       {
         name:"厚棉長袖上衣",
-        image: "https://c.imgz.jp/219/91946219/91946219b_b_14_500.jpg"
+        image: "/91946219b_b_14_500.jpg"
       }, 
       {
         name:"針織",
-        image: "https://cdn.grail.bz/images/goods/d/kz142/kz142_v2.jpg"
+        image: "/kz142_v2.jpg"
       }, 
       {
         name:"毛衣",
-        image: "https://c.imgz.jp/988/89172988/89172988b_51_d_500.jpg"
+        image: "/89172988b_51_d_500.jpg"
       }, 
       {
         name:"洋裝",
-        image: "https://c.imgz.jp/343/90158343/90158343b_b_11_500.jpg"
+        image: "/90158343b_b_11_500.jpg"
       }, 
       {
         name:"套裝",
-        image: "https://c.imgz.jp/214/91946214/91946214b_b_52_500.jpg"
+        image: "/91946214b_b_52_500.jpg"
       }, 
       {
         name:"平底鞋",
-        image: "https://cdn.grail.bz/images/goods/d/fa056/fa056_v9.jpg"
+        image: "/fa056_v9.jpg"
       }, 
       {
         name:"拖鞋",
-        image: "https://cdn.grail.bz/images/goods/d/gd1512/gd1512_col_11.jpg"
+        image: "/gd1512_col_11.jpg"
       }
     ],
   },
   jeans: {
-    description: "當商品的布料或版型較厚重時，會落在這個分類，例如牛仔長褲、牛仔外套、較有結構感的洋裝，或是布料雖然少但整體材質偏重的款式。這個重量也適合多層次設計或厚針織等冬季衣物。",
+    description: "當商品的布料或版型較厚重時，會落在這個分類，例如牛仔長褲、牛仔外套、較有結構感的洋裝，或是布料雖然少但整體材質偏重的款式。這個重量也適合多層次設計或厚針織等冬季衣物、4cm以下跟鞋。",
     examples: [
       {
         name:"牛仔褲",
-        image: "https://cdn.grail.bz/images/goods/d/cu532/cu532_v4.jpg"
+        image: "/cu532_v4.jpg"
       },
       {
         name:"牛仔外套",
-        image: "https://cdn.grail.bz/images/goods/d/fo1889/fo1889_v1.jpg"
+        image: "/fo1889_v1.jpg"
       },
       {
         name:"牛仔洋裝",
-        image: "https://cdn.grail.bz/images/goods/d/tu1066/tu1066_v1.jpg"
+        image: "/tu1066_v1.jpg"
       },
       {
         name:"飛行外套",
-        image: "https://classicalelf.shop/cdn/shop/files/002_11c1924f-6007-41b0-b56d-9dc2dd3665e3_900x.jpg?v=1741838125"
+        image: "/002_11c1924f-6007-41b0-b56d-9dc2dd3665e3_900x.jpg"
       }, 
       {
         name:"皮外套",
-        image: "https://cdn.grail.bz/images/goods/d/ze863/ze863_col_19.jpg"
+        image: "/ze863_col_19.jpg"
       }, 
       {
         name:"娃娃鞋",
-        image: "https://cdn.grail.bz/images/goods/d/gd1373/gd1373_col_13.jpg"
+        image: "/gd1373_col_13.jpg"
       }
     ],
   },
   shoes: {
-    description: "這個分類主要涵蓋中高重量的鞋款與蓬鬆型冬季外套，例如鞋跟高度8公分以下的中跟鞋，或厚度與材積都偏大的保暖衣物。像是帶有毛領、剪裁較長、裙擺寬大的洋裝型外套，或是連帽的中綿羽絨風外套，即使長度偏短，由於填充量大與版型寬鬆，實際包裝後的材積仍會接近2公斤級別。這類商品通常無法完全壓縮，建議預估此分類運費較為穩妥。如鞋盒或衣物體積特別大，仍可能視情況拆盒或壓縮包裝出貨。",
+    description: "這個分類主要涵蓋中高重量的鞋款與蓬鬆型冬季外套，例如鞋跟高度4-8公分的中跟鞋，或厚度與材積都偏大的保暖衣物。像是帶有毛領、剪裁較長、裙擺寬大的洋裝型外套，或是連帽的中綿羽絨風外套，即使長度偏短，由於填充量大與版型寬鬆，實際包裝後的材積仍會接近2公斤級別。這類商品通常無法完全壓縮，建議預估此分類運費較為穩妥。如鞋盒或衣物體積特別大，仍可能視情況拆盒或壓縮包裝出貨。",
     examples: [
       {
         name:"樂福鞋",
-        image: "https://cdn.grail.bz/images/goods/d/zr1205/zr1205_col_58.jpg"
+        image: "/zr1205_col_58.jpg"
       },
       {
         name:"厚底鞋",
-        image: "https://cdn.grail.bz/images/goods/d/fa001/fa001_col_11.jpg"
+        image: "/fa001_col_11.jpg"
       },
       {
         name:"跟鞋",
-        image: "https://cdn.grail.bz/images/goods/d/gd1555/gd1555_u.jpg"
+        image: "/gd1555_u.jpg"
       }, 
       {
         name:"毛領長版大衣",
-        image: "https://rojita.itembox.design/product/031/000000003113/000000003113-01-l.jpg?t=20250404132342"
+        image: "/000000003113-01-l.jpg"
       }, 
       {
         name:"鋪棉外套",
-        image: "https://rojita.itembox.design/product/032/000000003220/000000003220-01-l.jpg?t=20250404132342"
+        image: "/000000003220-01-l.jpg"
       }
     ],
   },
@@ -163,15 +166,15 @@ const descriptions: Record<string, CategoryDescription> = {
     examples: [
       {
         name:"厚底鞋",
-        image: "https://rojita.itembox.design/product/020/000000002053/000000002053-01-l.jpg?t=20250404132342"
+        image: "/000000002053-01-l.jpg"
       }, 
       {
         name:"短靴",
-        image: "https://cdn.grail.bz/images/goods/d/ci383/ci383_col_11.jpg"
+        image: "/ci383_col_11.jpg"
       }, 
       {
         name:"高跟鞋",
-        image: "https://cdn.grail.bz/images/goods/d/fa073/fa073_u.jpg"
+        image: "/fa073_u.jpg"
       }
     ],
   },
@@ -180,15 +183,15 @@ const descriptions: Record<string, CategoryDescription> = {
     examples: [
       {
         name:"長筒靴",
-        image: "https://cdn.grail.bz/images/goods/d/fa076/fa076_v11.jpg"
+        image: "/fa076_v11.jpg"
       }, 
       {
         name:"超厚底鞋",
-        image: "https://rojita.itembox.design/product/012/000000001280/000000001280-01-l.jpg?t=20250404132342"
+        image: "/000000001280-01-l.jpg"
       }, 
       {
         name:"厚底靴",
-        image: "https://cdn.grail.bz/images/goods/d/zr1278/zr1278_v1.jpg"
+        image: "/zr1278_v1.jpg"
       }
     ],
   },
