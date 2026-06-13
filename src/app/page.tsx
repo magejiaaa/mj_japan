@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { CalculationSummary, ProductItem } from "@/lib/types"
-import { storeShippingConfig } from "@/lib/storeConfig"
+import { storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 export default function Home() {
@@ -58,7 +58,7 @@ export default function Home() {
           new URLSearchParams({
             dataset: "TaiwanExchangeRate",
             data_id: "JPY",
-            start_date: "2025-03-01",
+            start_date: "2026-03-01",
           }),
       )
 
@@ -140,18 +140,12 @@ export default function Home() {
       processedStores.set(product.store, (processedStores.get(product.store) ?? 0) + productTotal)
     })
 
+    // 根據每家店的總金額計算國內運費
     processedStores.forEach((storeTotal, store) => {
-      const config = storeShippingConfig[store] || storeShippingConfig.default
-
-      if (store === "other") {
-        // 對於"其他"店家，尋找該店家的第一個商品，使用其自訂運費
-        const productWithCustomFee = filteredProducts.find((p) => p.store === "other")
-        totalDomesticShippingJPY += productWithCustomFee?.customShippingFee || 0
-      } else if (store === "canshop" && storeTotal >= config.freeThreshold) {
-        totalDomesticShippingJPY += 330
-      } else if (storeTotal < config.freeThreshold) {
-        totalDomesticShippingJPY += config.fee
-      }
+      const customFee = store === "other"
+        ? filteredProducts.find((p) => p.store === "other")?.customShippingFee
+        : undefined
+      totalDomesticShippingJPY += getDomesticShippingFee(store, storeTotal, customFee)
     })
 
     if (hasOtherCategory) totalInternationalShipping += 200
@@ -164,8 +158,83 @@ export default function Home() {
     const totalTWD = totalJPY * exchangeRate
     const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
     const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
+    // 計算蝦皮價格 (總價/81.5%，取20的倍數)
+    // 蝦皮手續費6%(成交) + 2.5%(金流) + 6%(免運) + 預購(3%) = 17.5%
+    // 小規模人營業稅1%
     const shopeePrice = Math.ceil(grandTotal / 0.815 / 20) * 20
+    // 計算其他平台價格 (蝦皮價格/1.175)
     const otherPlatformPrice = Math.ceil(shopeePrice / 1.175)
+
+    // 計算每個商品的分攤價格
+    const newItemPrices = new Map<string, { shopeePrice: number; otherPrice: number }>()
+
+    // 先算每個 store 的總金額，用來分攤國內運費
+    const storeTotalMap = new Map<string, number>()
+    filteredProducts.forEach((product) => {
+      if (product.price <= 0) return
+      const amt = product.price * product.quantity
+      storeTotalMap.set(product.store, (storeTotalMap.get(product.store) || 0) + amt)
+    })
+    // 計算「其他」類別商品的總數量，用來分攤 200 元固定運費
+    const otherCategoryProducts = filteredProducts.filter((p) => p.category === "other" && p.price > 0)
+    const totalOtherQuantity = otherCategoryProducts.reduce((sum, p) => sum + p.quantity, 0)
+
+    // 第一輪：計算每個商品的未進位小計（用來決定分攤比例）
+    const itemSubtotals = new Map<string, number>()
+    filteredProducts.forEach((product) => {
+      if (product.price <= 0) return
+
+      // 1. 商品成本（台幣）
+      const itemCostTWD = product.price * product.quantity * exchangeRate
+
+      // 2. 分攤國內運費（按該店的商品金額比例）
+      const storeTotal = storeTotalMap.get(product.store) || 0
+      const storeDomesticShippingJPY = getDomesticShippingFee(product.store, storeTotal, product.customShippingFee)
+      const itemStoreProportion = storeTotal > 0 ? (product.price * product.quantity) / storeTotal : 0
+      const itemDomesticShippingTWD = storeDomesticShippingJPY * exchangeRate * itemStoreProportion
+
+      // 3. 國際運費：「其他」類別固定 200 元依數量比例分攤，其他類別按件計算
+      let itemIntlShipping: number
+      if (product.category === "other") {
+        itemIntlShipping = totalOtherQuantity > 0 ? (200 * product.quantity) / totalOtherQuantity : 0
+      } else {
+        const intlShippingPerItem = getCategoryInfo(product.category).fee
+        itemIntlShipping = intlShippingPerItem * product.quantity
+      }
+
+      itemSubtotals.set(product.id, itemCostTWD + itemDomesticShippingTWD + itemIntlShipping)
+    })
+
+    // 第二輪：依各商品小計佔 grandTotal 的比例，從已進位的總價反推各商品售價
+    // 最後一件商品補足差額，確保加總 = 總價，消除進位誤差
+    const validProducts = filteredProducts.filter((p) => p.price > 0)
+    let remainingShopee = shopeePrice
+    let remainingOther = otherPlatformPrice
+    validProducts.forEach((product, idx) => {
+      const subtotal = itemSubtotals.get(product.id) ?? 0
+      const isLast = idx === validProducts.length - 1
+
+      let itemShopeePrice: number
+      let itemOtherPrice: number
+
+      if (isLast) {
+        // 最後一件直接用剩餘差額，確保加總精確
+        itemShopeePrice = remainingShopee
+        itemOtherPrice = remainingOther
+      } else {
+        // 按比例分攤，取最近的 20 倍數（蝦皮）或整數（其他）
+        const proportion = grandTotal > 0 ? subtotal / grandTotal : 0
+        itemShopeePrice = Math.round((shopeePrice * proportion) / 20) * 20
+        itemOtherPrice = Math.round(otherPlatformPrice * proportion)
+        remainingShopee -= itemShopeePrice
+        remainingOther -= itemOtherPrice
+      }
+      newItemPrices.set(product.id, {
+        shopeePrice: itemShopeePrice,
+        otherPrice: itemOtherPrice,
+      })
+    })
+    setItemPrices(newItemPrices)
 
     setSummary((prev) => ({
       totalJPY,
@@ -192,7 +261,7 @@ export default function Home() {
         price: 0,
         quantity: 1,
         category: "clothing",
-        customShippingFee: 0,
+        customShippingFee: 0, // 新增自訂運費字段
       },
     ])
 
@@ -249,6 +318,7 @@ export default function Home() {
                 storeAmounts={getStoreAmounts(products)}
                 checkedIds={checkedIds}
                 onToggleCheck={toggleCheck}
+                itemPrices={itemPrices}
               />
               {/* 複製傳送 */}
               <div className="rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-light)] p-4 text-center shadow-[var(--shadow-soft)] lg:col-span-2 md:flex md:items-center md:justify-center md:gap-8">
@@ -292,12 +362,12 @@ export default function Home() {
     </ThemeProvider>
   )
 
-  function getStoreAmounts(items: ProductItem[]): Map<string, number> {
-    const storeAmounts = new Map<string, number>()
-    items.forEach((product) => {
-      if (product.price <= 0) return
-      storeAmounts.set(product.store, (storeAmounts.get(product.store) ?? 0) + product.price * product.quantity)
+  function getStoreAmounts(products: ProductItem[]): Map<string, number> {
+    const map = new Map<string, number>()
+    products.forEach((p) => {
+      if (p.price <= 0) return
+      map.set(p.store, (map.get(p.store) ?? 0) + p.price * p.quantity)
     })
-    return storeAmounts
+    return map
   }
 }

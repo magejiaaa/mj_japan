@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { CalculationSummary, ProductItem } from "@/lib/types"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { getStoreName, storeShippingConfig } from "@/lib/storeConfig"
+import { getStoreName, storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
@@ -33,6 +33,7 @@ export default function CalculationResult({
   storeAmounts,
   checkedIds,
   onToggleCheck,
+  itemPrices,
 }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
   const checkedProducts = products.filter((product) => product.price > 0 && checkedIds.has(product.id))
@@ -76,13 +77,22 @@ export default function CalculationResult({
       if (product.category === "other" && internationalShippingFee > 0) otherCategoryProcessed = true
 
       text += `${index + 1}. ${product.url || "[尚未填寫網址]"}\n`
-      text += `   日本店家: ${storeName}\n`
+      text += `   店家: ${storeName}\n`
       text += `   價格: ${formatCurrency(product.price, "JPY")}\n`
       text += `   顏色尺寸: ${product.color || "-"}\n`
       text += `   類別: ${categoryInfo.name}\n`
       text += `   數量: ${product.quantity}\n`
       if (product.store === "other") text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
-      text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n\n`
+      text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
+      // 加入分攤單品價格
+      const priceInfo = itemPrices.get(product.id)
+      if (priceInfo) {
+        if (summary.selectedPlatform === "shopee") {
+          text += `   【蝦皮單品價】: ${formatCurrency(priceInfo.shopeePrice, "TWD")}\n\n`
+        } else {
+          text += `   【賣貨便/iopen單品價】: ${formatCurrency(priceInfo.otherPrice, "TWD")}\n\n`
+        }
+      }
     })
 
     text += "訂單摘要:\n"
@@ -116,8 +126,9 @@ export default function CalculationResult({
               const storeName = getStoreName(product.store)
               const productSubtotalTWD = product.price * product.quantity * exchangeRate
               const proportion = summary.totalTWD > 0 ? productSubtotalTWD / summary.totalTWD : 0
-              const allocatedShopeePrice = Math.round(summary.shopeePrice * proportion)
-              const allocatedOtherPrice = Math.round(summary.otherPlatformPrice * proportion)
+              const priceInfo = itemPrices.get(product.id)
+              const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
+              const allocatedOtherPrice = priceInfo?.otherPrice ?? 0
               const isChecked = checkedIds.has(product.id)
 
               return (
