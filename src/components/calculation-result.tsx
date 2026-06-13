@@ -124,8 +124,6 @@ export default function CalculationResult({
               if (product.price <= 0) return null
               const categoryInfo = getCategoryInfo(product.category)
               const storeName = getStoreName(product.store)
-              const productSubtotalTWD = product.price * product.quantity * exchangeRate
-              const proportion = summary.totalTWD > 0 ? productSubtotalTWD / summary.totalTWD : 0
               const priceInfo = itemPrices.get(product.id)
               const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
               const allocatedOtherPrice = priceInfo?.otherPrice ?? 0

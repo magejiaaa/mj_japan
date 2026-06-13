@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ProductItem as ProductItemType } from "@/lib/types"
+import { categoryMap } from "@/lib/categoryMap"
 import StoreSelector from "@/components/store-selector"
 
 interface ProductItemProps {
@@ -142,14 +143,9 @@ export default function ProductItem({
                   <SelectValue placeholder="選擇類別" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="underwear">薄款內衣褲</SelectItem>
-                  <SelectItem value="clothing">薄款上下著</SelectItem>
-                  <SelectItem value="coat">厚外套／毛衣／厚裙</SelectItem>
-                  <SelectItem value="jeans">牛仔上下著</SelectItem>
-                  <SelectItem value="shoes">鞋類</SelectItem>
-                  <SelectItem value="shortBoots">短靴／厚底鞋</SelectItem>
-                  <SelectItem value="longBoots">長靴</SelectItem>
-                  <SelectItem value="other">其他類別</SelectItem>
+                  {Object.entries(categoryMap).map(([key, { name }]) => (
+                    <SelectItem key={key} value={key}>{name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
