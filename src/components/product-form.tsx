@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import ProductItem from "@/components/product-item"
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import { getStoreKey } from "@/lib/storeConfig"
-import { getCategoryKey } from "@/lib/categoryMap"
+import { categoryMap, getCategoryKey } from "@/lib/categoryMap"
 
 interface ProductFormProps {
   products: ProductItemType[]
@@ -30,26 +30,52 @@ export default function ProductForm({
   const [importText, setImportText] = React.useState("")
 
   function parseProductData(text: string): ProductItemType[] {
-    const items = text.match(/\d+\.\s*[\s\S]*?(?=(\n\d+\.|$))/g) || []
+    const items: string[] = []
+    let currentItem: string[] = []
+
+    text.split(/\r?\n/).forEach((line) => {
+      if (/^\s*訂單摘要:/.test(line)) {
+        if (currentItem.length > 0) items.push(currentItem.join("\n"))
+        currentItem = []
+        return
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        if (currentItem.length > 0) items.push(currentItem.join("\n"))
+        currentItem = [line]
+        return
+      }
+
+      if (currentItem.length > 0) currentItem.push(line)
+    })
+
+    if (currentItem.length > 0) items.push(currentItem.join("\n"))
+
+    const parseAmount = (value: string | undefined) => (value ? Number(value.replace(/,/g, "")) : 0)
 
     return items.map((item) => {
-      const urlMatch = item.match(/\d+\.\s*([^\n]+)/)
-      const storeMatch = item.match(/日本店家:\s*(.*)/)
-      const priceMatch = item.match(/價格:\s*¥?([\d,]+)/)
+      const urlMatch = item.match(/^\s*\d+\.\s*([^\n]+)/m)
+      const storeMatch = item.match(/(?:日本店家|店家):\s*(.*)/)
+      const priceMatch = item.match(/價格:\s*(?:[¥￥]|JPY|日幣)?\s*([\d,]+)/i)
       const colorMatch = item.match(/顏色尺寸:\s*([\s\S]*?)\n\s*類別:/)
       const categoryMatch = item.match(/類別:\s*(.*)/)
       const quantityMatch = item.match(/數量:\s*(\d+)/)
-      const shippingMatch = item.match(/日本國內運費:\s*¥?([\d,]+)/)
+      const shippingMatch = item.match(/日本國內運費:\s*(?:[¥￥]|JPY|日幣)?\s*([\d,]+)/i)
+      const categoryText = categoryMatch?.[1]?.trim() || ""
+      const categoryName =
+        Object.values(categoryMap)
+          .map((category) => category.name)
+          .find((name) => categoryText.startsWith(name)) || categoryText.replace(/\s+(?:NT\$|\$)\s*[\d,]+.*$/, "").trim()
 
       return {
         id: Math.random().toString(36).slice(2),
         url: urlMatch?.[1]?.trim() || "",
         store: storeMatch ? getStoreKey(storeMatch[1].trim()) || "free" : "free",
-        price: priceMatch?.[1] ? Number(priceMatch[1].replace(/,/g, "")) : 0,
+        price: parseAmount(priceMatch?.[1]),
         color: colorMatch?.[1]?.trim() || "",
-        category: categoryMatch ? getCategoryKey(categoryMatch[1].trim()) || "clothing" : "clothing",
+        category: categoryName ? getCategoryKey(categoryName) || "clothing" : "clothing",
         quantity: quantityMatch?.[1] ? Number(quantityMatch[1]) : 1,
-        customShippingFee: shippingMatch?.[1] ? Number(shippingMatch[1].replace(/,/g, "")) : 0,
+        customShippingFee: parseAmount(shippingMatch?.[1]),
       }
     })
   }

@@ -78,12 +78,10 @@ export default function CalculationResult({
 
       text += `${index + 1}. ${product.url || "[尚未填寫網址]"}\n`
       text += `   店家: ${storeName}\n`
-      text += `   價格: ${formatCurrency(product.price, "JPY")}\n`
+      text += `   價格: ${formatCurrency(product.price, "JPY")}  數量: ${product.quantity}\n`
       text += `   顏色尺寸: ${product.color || "-"}\n`
-      text += `   類別: ${categoryInfo.name}\n`
-      text += `   數量: ${product.quantity}\n`
+      text += `   類別: ${categoryInfo.name} ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
       if (product.store === "other") text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
-      text += `   國際運費: ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
       // 加入分攤單品價格
       const priceInfo = itemPrices.get(product.id)
       if (priceInfo) {
@@ -96,8 +94,8 @@ export default function CalculationResult({
     })
 
     text += "訂單摘要:\n"
-    text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")} (${formatCurrency(summary.totalTWD, "TWD")})\n`
-    text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")} (${formatCurrency(summary.totalDomesticShippingTWD, "TWD")})\n`
+    text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")}\n`
+    text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")}\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
     text += `平台總價: ${formatCurrency(summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice, "TWD")}\n`
 

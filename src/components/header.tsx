@@ -58,7 +58,6 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
             <ol className="mb-4 list-decimal space-y-1 pl-5">
               <li>yahoo購物jp</li>
               <li>mercari</li>
-              <li>square-enix store</li>
             </ol>
             <p>有些品項在多平台有販售，可以找找樂天 jp 或 amazon</p>
           </section>
