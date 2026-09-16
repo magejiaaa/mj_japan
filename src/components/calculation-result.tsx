@@ -49,7 +49,7 @@ export default function CalculationResult({
 
   const getDomesticShippingFee = (store: string, storeTotal: number) => {
     const config = storeShippingConfig[store] || storeShippingConfig.default
-    if (store === "canshop" && storeTotal >= config.freeThreshold) return 330
+    if (config.specialRule === "canshop_330_after_threshold" && storeTotal >= config.freeThreshold) return 330
     return storeTotal >= config.freeThreshold ? 0 : config.fee
   }
 

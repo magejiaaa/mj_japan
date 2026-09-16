@@ -14,10 +14,13 @@ import { ThemeProvider } from "@/components/theme-provider"
 import type { CalculationSummary, ProductItem } from "@/lib/types"
 import { storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
+import { loadMjJapanSettings, type MjJapanRemoteSettings } from "@/lib/mjJapanSettings"
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
   const [lastUpdated, setLastUpdated] = useState<string>("-")
+  const [remoteSettings, setRemoteSettings] = useState<MjJapanRemoteSettings>({ shopeeRate: 0.175 })
+  const [settingsVersion, setSettingsVersion] = useState(0)
   const [products, setProducts] = useState<ProductItem[]>([
     {
       id: "1",
@@ -79,10 +82,20 @@ export default function Home() {
   // 當產品或匯率變化時計算總額
   useEffect(() => {
     calculateTotals()
-  }, [products, exchangeRate, summary.selectedPlatform, checkedIds])
+  }, [products, exchangeRate, summary.selectedPlatform, checkedIds, settingsVersion])
 
   // 初始獲取匯率
   useEffect(() => {
+    loadMjJapanSettings()
+      .then((settings) => {
+        if (!settings) return
+        setRemoteSettings((current) => ({ ...current, ...settings }))
+        if (settings.defaultRate) setExchangeRate(settings.defaultRate)
+        setSettingsVersion((version) => version + 1)
+      })
+      .catch((error) => {
+        console.error("取得後台設定失敗，使用本地預設:", error)
+      })
     fetchExchangeRate()
     setDarkMode(localStorage.getItem("darkMode") === "true")
   }, [])
@@ -158,12 +171,15 @@ export default function Home() {
     const totalTWD = totalJPY * exchangeRate
     const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
     const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
-    // 計算蝦皮價格 (總價/81.5%，取20的倍數)
-    // 蝦皮手續費6%(成交) + 2.5%(金流) + 6%(免運) + 預購(3%) = 17.5%
+    // 計算蝦皮價格，取20的倍數
+    // 蝦皮手續費預設 17.5%，小規模人營業稅 1%
     // 小規模人營業稅1%
-    const shopeePrice = Math.ceil(grandTotal / 0.815 / 20) * 20
-    // 計算其他平台價格 (蝦皮價格/1.175)
-    const otherPlatformPrice = Math.ceil(shopeePrice / 1.175)
+    const shopeeRate = Number(remoteSettings.shopeeRate ?? 0.175)
+    const shopeeTaxRate = 0.01
+    const shopeeDenominator = Math.max(1 - shopeeRate - shopeeTaxRate, 0.01)
+    const shopeePrice = Math.ceil(grandTotal / shopeeDenominator / 20) * 20
+    // 計算其他平台價格
+    const otherPlatformPrice = Math.ceil(shopeePrice / (1 + shopeeRate))
 
     // 計算每個商品的分攤價格
     const newItemPrices = new Map<string, { shopeePrice: number; otherPrice: number }>()
