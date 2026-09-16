@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import ProductItem from "@/components/product-item"
 import type { ProductItem as ProductItemType } from "@/lib/types"
-import { getStoreKey } from "@/lib/storeConfig"
+import { getCustomStoreKey, getStoreKey, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
 import { categoryMap, getCategoryKey } from "@/lib/categoryMap"
 
 interface ProductFormProps {
@@ -28,6 +28,21 @@ export default function ProductForm({
   onImportProducts,
 }: ProductFormProps) {
   const [importText, setImportText] = React.useState("")
+  const customStoreOptions = React.useMemo(() => {
+    const map = new Map<string, { name: string; customShippingFee?: number }>()
+
+    products.forEach((product) => {
+      const name = normalizeCustomStoreName(product.customStoreName || "")
+      if (!name) return
+      const key = getCustomStoreKey(name)
+      map.set(key, {
+        name,
+        customShippingFee: product.customShippingFee ?? map.get(key)?.customShippingFee,
+      })
+    })
+
+    return Array.from(map, ([key, option]) => ({ key, ...option }))
+  }, [products])
 
   function parseProductData(text: string): ProductItemType[] {
     const items: string[] = []
@@ -67,10 +82,15 @@ export default function ProductForm({
           .map((category) => category.name)
           .find((name) => categoryText.startsWith(name)) || categoryText.replace(/\s+(?:NT\$|\$)\s*[\d,]+.*$/, "").trim()
 
+      const storeName = storeMatch?.[1]?.trim() || ""
+      const knownStoreKey = storeName ? getStoreKey(storeName) : undefined
+      const customStoreName = knownStoreKey ? undefined : storeName
+
       return {
         id: Math.random().toString(36).slice(2),
         url: urlMatch?.[1]?.trim() || "",
-        store: storeMatch ? getStoreKey(storeMatch[1].trim()) || "free" : "free",
+        store: knownStoreKey || (customStoreName ? getCustomStoreKey(customStoreName) : "free"),
+        customStoreName,
         price: parseAmount(priceMatch?.[1]),
         color: colorMatch?.[1]?.trim() || "",
         category: categoryName ? getCategoryKey(categoryName) || "clothing" : "clothing",
@@ -98,7 +118,6 @@ export default function ProductForm({
             onClick={onAddProduct}
             size="sm"
             className="bg-[var(--color-primary-light)] text-[var(--color-primary-hover)] hover:bg-[var(--color-primary)] hover:text-white"
-            disabled={products.some((product) => product.store === "other")}
           >
             <Plus className="mr-1 h-4 w-4" />
             添加商品
@@ -124,6 +143,7 @@ export default function ProductForm({
               onChange={onProductChange}
               showRemoveButton={products.length > 1}
               onOpenCategoryModal={onOpenCategoryModal}
+              customStoreOptions={customStoreOptions.filter((option) => option.key !== product.store || isCustomStoreKey(product.store))}
             />
           ))}
         </div>

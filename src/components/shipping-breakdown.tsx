@@ -6,6 +6,7 @@ interface ShippingBreakdownProps {
   domesticShippingJPY: number
   domesticShippingTWD: number
   store: string
+  storeName?: string
   storeTotal: number
   isCustomShipping?: boolean
 }
@@ -14,6 +15,7 @@ export default function ShippingBreakdown({
   domesticShippingJPY,
   domesticShippingTWD,
   store,
+  storeName,
   storeTotal,
   isCustomShipping,
 }: ShippingBreakdownProps) {
@@ -30,7 +32,7 @@ export default function ShippingBreakdown({
     <div className="mt-2 border-l-2 border-[var(--color-primary)] pl-3 text-xs text-[var(--text-secondary)]">
       <div className="flex justify-between gap-4">
         <span>
-          {getStoreName(store)}
+          {storeName || getStoreName(store)}
           {isCustomShipping && <span className="ml-1 text-[10px] italic text-[var(--color-primary-hover)]">*自訂運費</span>}
         </span>
         <span>

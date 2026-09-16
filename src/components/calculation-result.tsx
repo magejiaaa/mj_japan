@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { CalculationSummary, ProductItem } from "@/lib/types"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { getStoreName, storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
+import {
+  getCustomStoreKey,
+  getStoreName,
+  isCustomStoreKey,
+  normalizeCustomStoreName,
+  storeShippingConfig,
+} from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
@@ -47,10 +53,23 @@ export default function CalculationResult({
     }).format(amount)
   }
 
-  const getDomesticShippingFee = (store: string, storeTotal: number) => {
+  const getConfiguredDomesticShippingFee = (store: string, storeTotal: number) => {
     const config = storeShippingConfig[store] || storeShippingConfig.default
     if (config.specialRule === "canshop_330_after_threshold" && storeTotal >= config.freeThreshold) return 330
     return storeTotal >= config.freeThreshold ? 0 : config.fee
+  }
+
+  const getProductStoreKey = (product: ProductItem): string => {
+    if (isCustomStoreKey(product.store)) return product.store
+    if (product.store === "other") {
+      const customStoreName = normalizeCustomStoreName(product.customStoreName || "")
+      return customStoreName ? getCustomStoreKey(customStoreName) : "other"
+    }
+    return product.store
+  }
+
+  const getDisplayStoreName = (product: ProductItem): string => {
+    return getStoreName(getProductStoreKey(product), product.customStoreName)
   }
 
   const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
@@ -72,7 +91,7 @@ export default function CalculationResult({
 
     checkedProducts.forEach((product, index) => {
       const categoryInfo = getCategoryInfo(product.category)
-      const storeName = getStoreName(product.store)
+      const storeName = getDisplayStoreName(product)
       const internationalShippingFee = getInternationalShippingFee(product, otherCategoryProcessed)
       if (product.category === "other" && internationalShippingFee > 0) otherCategoryProcessed = true
 
@@ -81,7 +100,9 @@ export default function CalculationResult({
       text += `   價格: ${formatCurrency(product.price, "JPY")}  數量: ${product.quantity}\n`
       text += `   顏色尺寸: ${product.color || "-"}\n`
       text += `   類別: ${categoryInfo.name} ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
-      if (product.store === "other") text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
+      if (isCustomStoreKey(getProductStoreKey(product)) || product.store === "other") {
+        text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
+      }
       // 加入分攤單品價格
       const priceInfo = itemPrices.get(product.id)
       if (priceInfo) {
@@ -121,7 +142,7 @@ export default function CalculationResult({
             {products.map((product, index) => {
               if (product.price <= 0) return null
               const categoryInfo = getCategoryInfo(product.category)
-              const storeName = getStoreName(product.store)
+              const storeName = getDisplayStoreName(product)
               const priceInfo = itemPrices.get(product.id)
               const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
               const allocatedOtherPrice = priceInfo?.otherPrice ?? 0
@@ -189,13 +210,14 @@ export default function CalculationResult({
               </div>
 
               {Array.from(storeAmounts.entries()).map(([store, storeTotal]) => {
-                const storeProducts = products.filter((product) => product.store === store && product.price > 0)
+                const storeProducts = products.filter((product) => getProductStoreKey(product) === store && product.price > 0)
                 if (storeProducts.length === 0) return null
                 const firstProduct = storeProducts[0]
+                const isCustomShipping = (isCustomStoreKey(store) || store === "other") && firstProduct.customShippingFee !== undefined
                 const domesticShippingFee =
-                  store === "other" && firstProduct.customShippingFee !== undefined
-                    ? firstProduct.customShippingFee
-                    : getDomesticShippingFee(store, storeTotal)
+                  isCustomShipping
+                    ? firstProduct.customShippingFee ?? 0
+                    : getConfiguredDomesticShippingFee(store, storeTotal)
 
                 return (
                   <ShippingBreakdown
@@ -203,8 +225,9 @@ export default function CalculationResult({
                     domesticShippingJPY={domesticShippingFee}
                     domesticShippingTWD={domesticShippingFee * exchangeRate}
                     store={store}
+                    storeName={getStoreName(store, firstProduct.customStoreName)}
                     storeTotal={storeTotal}
-                    isCustomShipping={store === "other" && firstProduct.customShippingFee !== undefined}
+                    isCustomShipping={isCustomShipping}
                   />
                 )
               })}

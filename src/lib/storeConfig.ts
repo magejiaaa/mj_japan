@@ -29,7 +29,7 @@ export const storeList: StoreConfig[] = [
   { key: "ZOZOTOWN", name: "ZOZOTOWN", fee: 660, freeThreshold: Infinity, label: "ZOZOTOWN (660 日幣)" },
   { key: "dreamvs", name: "夢展望", fee: 580, freeThreshold: 8000 },
   { key: "rakuten", name: "樂天 Fashion", fee: 770, freeThreshold: 3980 },
-  { key: "other", name: "其他", fee: 0, freeThreshold: Infinity, label: "自行輸入運費（請勿新增其他商品，會影響估價）" },
+  { key: "other", name: "其他", fee: 0, freeThreshold: Infinity, label: "其他（新增自訂店家）" },
 ]
 
 function buildLabel(store: StoreConfig): string {
@@ -51,13 +51,33 @@ export const storeShippingConfig: Record<string, { fee: number; freeThreshold: n
 
 export const storeNameMap: Record<string, string> = Object.fromEntries(storeList.map((store) => [store.key, store.name]))
 
-export function getStoreName(store: string): string {
+export const CUSTOM_STORE_PREFIX = "custom:"
+
+export function normalizeCustomStoreName(name: string): string {
+  return name.trim().replace(/\s+/g, " ")
+}
+
+export function getCustomStoreKey(name: string): string {
+  const normalized = normalizeCustomStoreName(name)
+  return normalized ? `${CUSTOM_STORE_PREFIX}${encodeURIComponent(normalized.toLocaleLowerCase())}` : "other"
+}
+
+export function isCustomStoreKey(store: string): boolean {
+  return store.startsWith(CUSTOM_STORE_PREFIX)
+}
+
+export function getStoreName(store: string, customStoreName?: string): string {
+  if (isCustomStoreKey(store)) {
+    const normalized = normalizeCustomStoreName(customStoreName || "")
+    if (normalized) return normalized
+    return decodeURIComponent(store.slice(CUSTOM_STORE_PREFIX.length))
+  }
   return storeNameMap[store] ?? storeNameMap.other
 }
 
 /** 計算店家國內運費（日幣） */
 export function getDomesticShippingFee(store: string, storeTotal: number, customShippingFee?: number): number {
-  if (store === "other") return customShippingFee ?? 0
+  if (store === "other" || isCustomStoreKey(store)) return customShippingFee ?? 0
   const config = storeShippingConfig[store] ?? storeShippingConfig.default
   if (config.specialRule === "custom") return customShippingFee ?? 0
   if (config.specialRule === "canshop_330_after_threshold" && storeTotal >= config.freeThreshold) return 330

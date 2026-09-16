@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import { categoryMap } from "@/lib/categoryMap"
-import StoreSelector from "@/components/store-selector"
+import StoreSelector, { type CustomStoreOption } from "@/components/store-selector"
+import { getCustomStoreKey, isCustomStoreKey } from "@/lib/storeConfig"
 
 interface ProductItemProps {
   product: ProductItemType
@@ -14,6 +15,7 @@ interface ProductItemProps {
   onChange: (product: ProductItemType) => void
   showRemoveButton: boolean
   onOpenCategoryModal: () => void
+  customStoreOptions: CustomStoreOption[]
 }
 
 const inputClass = "border-[var(--border-input)] bg-white text-[var(--text-primary)] dark:bg-[var(--color-primary-ultra-light)]"
@@ -24,11 +26,32 @@ export default function ProductItem({
   onChange,
   showRemoveButton,
   onOpenCategoryModal,
+  customStoreOptions,
 }: ProductItemProps) {
+  const isCustomStore = product.store === "other" || isCustomStoreKey(product.store)
+
   const handleChange = (field: keyof ProductItemType, value: string | number) => {
     onChange({
       ...product,
       [field]: value,
+    })
+  }
+
+  const handleStoreChange = (value: string) => {
+    const customStore = customStoreOptions.find((option) => option.key === value)
+    onChange({
+      ...product,
+      store: value,
+      customStoreName: customStore?.name ?? (value === "other" ? "" : product.customStoreName),
+      customShippingFee: customStore?.customShippingFee ?? (value === "other" ? 0 : undefined),
+    })
+  }
+
+  const handleCustomStoreNameChange = (name: string) => {
+    onChange({
+      ...product,
+      store: getCustomStoreKey(name),
+      customStoreName: name,
     })
   }
 
@@ -68,24 +91,44 @@ export default function ProductItem({
             <label htmlFor={`store-${product.id}`} className="mb-1 block text-sm font-medium">
               日本店家
             </label>
-            <StoreSelector id={`store-${product.id}`} value={product.store} onChange={(value) => handleChange("store", value)} />
+            <StoreSelector
+              id={`store-${product.id}`}
+              value={product.store}
+              onChange={handleStoreChange}
+              customStoreOptions={customStoreOptions}
+            />
           </div>
 
-          {product.store === "other" && (
-            <div>
-              <label htmlFor={`custom-shipping-${product.id}`} className="mb-1 block text-sm font-medium">
-                自訂日本國內運費（日幣） <small className="text-[var(--text-muted)]">只計一次</small>
-              </label>
-              <Input
-                id={`custom-shipping-${product.id}`}
-                type="number"
-                min="0"
-                inputMode="numeric"
-                placeholder="請輸入運費"
-                value={product.customShippingFee || ""}
-                onChange={(e) => handleChange("customShippingFee", Number.parseFloat(e.target.value) || 0)}
-                className={inputClass}
-              />
+          {isCustomStore && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor={`custom-store-name-${product.id}`} className="mb-1 block text-sm font-medium">
+                  其他店家名稱
+                </label>
+                <Input
+                  id={`custom-store-name-${product.id}`}
+                  type="text"
+                  placeholder="請輸入店名"
+                  value={product.customStoreName || ""}
+                  onChange={(e) => handleCustomStoreNameChange(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor={`custom-shipping-${product.id}`} className="mb-1 block text-sm font-medium">
+                  該店日本國內運費（日幣） <small className="text-[var(--text-muted)]">同店只計一次</small>
+                </label>
+                <Input
+                  id={`custom-shipping-${product.id}`}
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  placeholder="請輸入運費"
+                  value={product.customShippingFee || ""}
+                  onChange={(e) => handleChange("customShippingFee", Number.parseFloat(e.target.value) || 0)}
+                  className={inputClass}
+                />
+              </div>
             </div>
           )}
 

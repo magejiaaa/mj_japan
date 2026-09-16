@@ -2,6 +2,7 @@ export interface ProductItem {
   id: string
   url: string
   store: string
+  customStoreName?: string
   price: number
   quantity: number
   category: string

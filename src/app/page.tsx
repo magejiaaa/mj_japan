@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
 import type { CalculationSummary, ProductItem } from "@/lib/types"
-import { storeShippingConfig, getDomesticShippingFee } from "@/lib/storeConfig"
+import { getCustomStoreKey, getDomesticShippingFee, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 import { loadMjJapanSettings, type MjJapanRemoteSettings } from "@/lib/mjJapanSettings"
 
@@ -27,6 +27,7 @@ export default function Home() {
       url: "",
       color: "",
       store: "free",
+      customStoreName: "",
       price: 0,
       quantity: 1,
       category: "clothing",
@@ -150,13 +151,14 @@ export default function Home() {
 
       // 累計每家店的總金額
       if (product.price <= 0) return
-      processedStores.set(product.store, (processedStores.get(product.store) ?? 0) + productTotal)
+      const storeKey = getProductStoreKey(product)
+      processedStores.set(storeKey, (processedStores.get(storeKey) ?? 0) + productTotal)
     })
 
     // 根據每家店的總金額計算國內運費
     processedStores.forEach((storeTotal, store) => {
-      const customFee = store === "other"
-        ? filteredProducts.find((p) => p.store === "other")?.customShippingFee
+      const customFee = isCustomStoreKey(store) || store === "other"
+        ? filteredProducts.find((p) => getProductStoreKey(p) === store)?.customShippingFee
         : undefined
       totalDomesticShippingJPY += getDomesticShippingFee(store, storeTotal, customFee)
     })
@@ -189,7 +191,8 @@ export default function Home() {
     filteredProducts.forEach((product) => {
       if (product.price <= 0) return
       const amt = product.price * product.quantity
-      storeTotalMap.set(product.store, (storeTotalMap.get(product.store) || 0) + amt)
+      const storeKey = getProductStoreKey(product)
+      storeTotalMap.set(storeKey, (storeTotalMap.get(storeKey) || 0) + amt)
     })
     // 計算「其他」類別商品的總數量，用來分攤 200 元固定運費
     const otherCategoryProducts = filteredProducts.filter((p) => p.category === "other" && p.price > 0)
@@ -204,8 +207,10 @@ export default function Home() {
       const itemCostTWD = product.price * product.quantity * exchangeRate
 
       // 2. 分攤國內運費（按該店的商品金額比例）
-      const storeTotal = storeTotalMap.get(product.store) || 0
-      const storeDomesticShippingJPY = getDomesticShippingFee(product.store, storeTotal, product.customShippingFee)
+      const storeKey = getProductStoreKey(product)
+      const storeTotal = storeTotalMap.get(storeKey) || 0
+      const storeCustomShippingFee = filteredProducts.find((p) => getProductStoreKey(p) === storeKey)?.customShippingFee
+      const storeDomesticShippingJPY = getDomesticShippingFee(storeKey, storeTotal, storeCustomShippingFee)
       const itemStoreProportion = storeTotal > 0 ? (product.price * product.quantity) / storeTotal : 0
       const itemDomesticShippingTWD = storeDomesticShippingJPY * exchangeRate * itemStoreProportion
 
@@ -274,10 +279,11 @@ export default function Home() {
         url: "",
         color: "",
         store: lastProduct?.store || "free",
+        customStoreName: lastProduct?.customStoreName || "",
         price: 0,
         quantity: 1,
         category: "clothing",
-        customShippingFee: 0, // 新增自訂運費字段
+        customShippingFee: lastProduct?.customShippingFee ?? 0,
       },
     ])
 
@@ -292,7 +298,22 @@ export default function Home() {
   }
 
   const handleProductChange = (updatedProduct: ProductItem) => {
-    setProducts(products.map((product) => (product.id === updatedProduct.id ? updatedProduct : product)))
+    const currentProduct = products.find((product) => product.id === updatedProduct.id)
+    const previousStoreKey = currentProduct ? getProductStoreKey(currentProduct) : updatedProduct.store
+    const nextStoreKey = getProductStoreKey(updatedProduct)
+    const syncCustomStore = isCustomStoreKey(previousStoreKey) && isCustomStoreKey(nextStoreKey)
+
+    setProducts(products.map((product) => {
+      if (product.id === updatedProduct.id) return updatedProduct
+      if (!syncCustomStore || getProductStoreKey(product) !== previousStoreKey) return product
+
+      return {
+        ...product,
+        store: nextStoreKey,
+        customStoreName: updatedProduct.customStoreName,
+        customShippingFee: updatedProduct.customShippingFee,
+      }
+    }))
   }
 
   const handlePlatformChange = (platform: "shopee" | "iopen" | "myship") => {
@@ -331,7 +352,7 @@ export default function Home() {
                 products={products}
                 summary={summary}
                 exchangeRate={exchangeRate}
-                storeAmounts={getStoreAmounts(products)}
+                storeAmounts={getStoreAmounts(products.filter((product) => checkedIds.has(product.id)))}
                 checkedIds={checkedIds}
                 onToggleCheck={toggleCheck}
                 itemPrices={itemPrices}
@@ -382,8 +403,18 @@ export default function Home() {
     const map = new Map<string, number>()
     products.forEach((p) => {
       if (p.price <= 0) return
-      map.set(p.store, (map.get(p.store) ?? 0) + p.price * p.quantity)
+      const storeKey = getProductStoreKey(p)
+      map.set(storeKey, (map.get(storeKey) ?? 0) + p.price * p.quantity)
     })
     return map
+  }
+
+  function getProductStoreKey(product: ProductItem): string {
+    if (isCustomStoreKey(product.store)) return product.store
+    if (product.store === "other") {
+      const customStoreName = normalizeCustomStoreName(product.customStoreName || "")
+      return customStoreName ? getCustomStoreKey(customStoreName) : "other"
+    }
+    return product.store
   }
 }
