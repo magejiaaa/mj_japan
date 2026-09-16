@@ -2,6 +2,9 @@ export interface CategoryInfo {
   weight: string
   fee: number
   name: string
+  description?: string
+  basics?: Array<{ id?: string; label: string; value: string }>
+  examples?: Array<{ name: string; image: string }>
 }
 
 export const categoryMap: Record<string, CategoryInfo> = {
@@ -12,13 +15,50 @@ export const categoryMap: Record<string, CategoryInfo> = {
   shoes: { weight: "2kg", fee: 400, name: "鞋類" },
   shortBoots: { weight: "2.5kg", fee: 500, name: "短靴／厚底鞋" },
   longBoots: { weight: "3kg", fee: 600, name: "長靴" },
-  other: { weight: "1kg", fee: 200, name: "其他類別" },
 }
 
+const fallbackCategory: CategoryInfo = { weight: "1kg", fee: 200, name: "其他類別" }
+
 export function getCategoryInfo(category: string): CategoryInfo {
-  return categoryMap[category] || categoryMap.other
+  return categoryMap[category] || categoryMap.other || fallbackCategory
 }
 
 export function getCategoryKey(name: string): string | undefined {
   return Object.entries(categoryMap).find(([, value]) => value.name === name)?.[0]
+}
+
+export function applyCategoryRules(rules: Array<{
+  key: string
+  name: string
+  weight?: string
+  fee?: number
+  description?: string
+  basics?: Array<{ id?: string; label: string; value: string }>
+  examples?: Array<{ name?: string; description?: string; image?: string; src?: string }>
+}>) {
+  if (!Array.isArray(rules) || rules.length === 0) return
+
+  Object.keys(categoryMap).forEach((key) => {
+    delete categoryMap[key]
+  })
+
+  rules.forEach((rule) => {
+    if (rule.key === "other") return
+    if (!rule.key || !rule.name) return
+    categoryMap[rule.key] = {
+      weight: rule.weight || "",
+      fee: Number(rule.fee || 0),
+      name: rule.name,
+      description: rule.description || "",
+      basics: Array.isArray(rule.basics) ? rule.basics : [],
+      examples: Array.isArray(rule.examples)
+        ? rule.examples
+            .map((example) => ({
+              name: example.description || example.name || "",
+              image: example.src || example.image || "",
+            }))
+            .filter((example) => example.name && example.image)
+        : [],
+    }
+  })
 }

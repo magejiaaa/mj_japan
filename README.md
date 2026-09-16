@@ -19,6 +19,16 @@
 6. 公用函式與資料
 - `lib/` 資料夾：包含商品分類、商店名稱、運費設定、型別定義與工具函式，支援主要功能邏輯。
 
+## 後台設定介接
+
+前台會讀取後台公開規則 API，成功時覆蓋本地分類、店家運費與費率設定；讀取失敗時會回退到本地預設資料。
+
+```env
+NEXT_PUBLIC_MJ_JAPAN_RULES_URL=https://你的後台網域/api/rules?target=mj_japan
+```
+
+本機未設定時，預設讀取 `http://localhost:3000/api/rules?target=mj_japan`。
+
 7. 其他輔助功能
 - `footer.tsx`、`header.tsx`：頁首與頁尾元件。
 - `hooks/`：自訂 React hooks，例如行動裝置偵測、提示訊息。

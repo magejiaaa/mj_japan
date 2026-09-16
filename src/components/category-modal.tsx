@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from "next/image"
 import { categoryMap } from "@/lib/categoryMap"
 
 interface CategoryModalProps {
@@ -194,14 +193,7 @@ const descriptions: Record<string, CategoryDescription> = {
         image: "/zr1278_v1.jpg"
       }
     ],
-  },
-  other: {
-    description: "若商品不屬於上述分類，將以實際稱重計價，運費為1公斤200元，0.5kg為一個單位。若有特殊材質、包裝或尺寸，運費將依實際狀況調整，多退少補，請提供具體商品資訊以利估算。",
-    examples: [
-      { name: "小物雜貨", image: "/other.jpg" },
-      { name: "文具飾品", image: "/other.jpg" },
-    ],
-  },
+  }
 }
 
 export default function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
@@ -228,7 +220,9 @@ export default function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
   const categories = Object.entries(categoryMap).map(([id, info]) => ({
     id,
     ...info,
-    ...descriptions[id],
+    description: info.description || descriptions[id]?.description || "",
+    basics: info.basics || [],
+    examples: info.examples?.length ? info.examples : descriptions[id]?.examples || [],
   }))
 
   return (
@@ -271,9 +265,15 @@ export default function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
                       <p className="text-[var(--text-secondary)]">國際運費</p>
                       <p className="mt-1 font-bold">{category.fee} 台幣 / 件</p>
                     </div>
+                    {category.basics.map((item) => (
+                      <div key={`${category.id}-${item.label}`} className="rounded-md bg-white p-3 dark:bg-[var(--bg-card)]">
+                        <p className="text-[var(--text-secondary)]">{item.label}</p>
+                        <p className="mt-1 font-bold">{item.value}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="mt-5">
+                  {category.examples.length > 0 && <div className="mt-5">
                     <p className="mb-3 text-sm font-bold">常見範例</p>
                     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                       {category.examples.map((example) => (
@@ -282,19 +282,17 @@ export default function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
                           className="overflow-hidden rounded-md border border-[var(--border-default)] bg-white dark:bg-[var(--bg-card)]"
                         >
                           <div className="relative aspect-square">
-                            <Image
+                            <img
                               src={example.image}
                               alt={example.name}
-                              fill
-                              sizes="(min-width: 768px) 160px, 45vw"
-                              className="object-cover"
+                              className="h-full w-full object-cover"
                             />
                           </div>
                           <p className="px-3 py-2 text-center text-sm font-medium">{example.name}</p>
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </div>}
                 </div>
               </TabsContent>
             ))}

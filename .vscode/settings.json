@@ -4,14 +4,14 @@
         "activityBar.background": "#ecc5c5",
         "activityBar.foreground": "#15202b",
         "activityBar.inactiveForeground": "#15202b99",
-        "activityBarBadge.background": "#ff3280",
+        "activityBarBadge.background": "#2f902f",
         "activityBarBadge.foreground": "#e7e7e7",
         "commandCenter.border": "#15202b99",
         "sash.hoverBorder": "#ecc5c5",
         "statusBar.background": "#df9f9f",
         "statusBar.foreground": "#15202b",
         "statusBarItem.hoverBackground": "#d27979",
-        "statusBarItem.remoteBackground": "#ff3280",
+        "statusBarItem.remoteBackground": "#287828",
         "statusBarItem.remoteForeground": "#15202b",
         "titleBar.activeBackground": "#df9f9f",
         "titleBar.activeForeground": "#15202b",
@@ -23,7 +23,9 @@
         "activityBarTop.inactiveForeground": "#15202b99",
         "commandCenter.foreground": "#15202b",
         "statusBar.debuggingBackground": "#df9f9f",
-        "statusBar.debuggingForeground": "#15202b"
+        "statusBar.debuggingForeground": "#15202b",
+        "activityBar.activeBorder": "#15202b",
+        "activityBarTop.activeBorder": "#15202b"
     },
     "peacock.color": "#df9f9f",
     "svn.ignoreMissingSvnWarning": true
