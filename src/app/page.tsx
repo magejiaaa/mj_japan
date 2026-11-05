@@ -54,7 +54,7 @@ export default function Home() {
     if (imported.length > 0) setProducts(imported)
   }
 
-  const fetchExchangeRate = async () => {
+  const fetchExchangeRate = async (): Promise<boolean> => {
     try {
       // FinMind 提供的匯率 API 端點
       const response = await fetch(
@@ -74,10 +74,13 @@ export default function Home() {
         const rate = Math.ceil(latestRate.cash_sell * 100) / 100
         setExchangeRate(rate)
         setLastUpdated(latestRate.date)
+        return true
       }
     } catch (error) {
       console.error("取得匯率失敗:", error)
     }
+
+    return false
   }
 
   // 當產品或匯率變化時計算總額
@@ -87,17 +90,31 @@ export default function Home() {
 
   // 初始獲取匯率
   useEffect(() => {
-    loadMjJapanSettings()
-      .then((settings) => {
-        if (!settings) return
-        setRemoteSettings((current) => ({ ...current, ...settings }))
-        if (settings.defaultRate) setExchangeRate(settings.defaultRate)
-        setSettingsVersion((version) => version + 1)
-      })
-      .catch((error) => {
-        console.error("取得後台設定失敗，使用本地預設:", error)
-      })
-    fetchExchangeRate()
+    const initializeSettings = async () => {
+      const [settingsResult, exchangeRateResult] = await Promise.allSettled([
+        loadMjJapanSettings(),
+        fetchExchangeRate(),
+      ])
+
+      if (settingsResult.status === "rejected") {
+        console.error("取得後台設定失敗，使用本地預設:", settingsResult.reason)
+        return
+      }
+
+      const settings = settingsResult.value
+      if (!settings) return
+
+      setRemoteSettings((current) => ({ ...current, ...settings }))
+      setSettingsVersion((version) => version + 1)
+
+      const hasLiveExchangeRate = exchangeRateResult.status === "fulfilled" && exchangeRateResult.value
+      const defaultRate = Number(settings.defaultRate)
+      if (!hasLiveExchangeRate && Number.isFinite(defaultRate) && defaultRate > 0) {
+        setExchangeRate(defaultRate)
+      }
+    }
+
+    initializeSettings()
     setDarkMode(localStorage.getItem("darkMode") === "true")
   }, [])
 
