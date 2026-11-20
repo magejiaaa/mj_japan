@@ -15,12 +15,24 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
       block: "start",
     })
   }
+  const unavailableStores = (
+    <>
+      <h2 className="mb-2 font-bold">無提供代購的網站</h2>
+      <ul className="mb-3 list-disc space-y-1 pl-5">
+        <li>Yahoo! 購物日本</li>
+        <li>Mercari</li>
+      </ul>
+      <p>同一商品也可以到樂天日本或 Amazon 找找看。</p>
+    </>
+  )
+  const storeRateNotice = "ZOZOTOWN、CAN ONLINE SHOP 的匯率請依 IG 或 Facebook 公告調整（目前 0.23）。"
 
   return (
-    <header className="px-4 pt-5">
-      <div className="mb-4 flex items-center justify-end gap-3">
+    <header className="px-4 pt-4 lg:pt-5">
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-[var(--color-primary-light)] px-3 py-1 lg:mb-4 lg:justify-end lg:gap-3 lg:bg-transparent lg:p-0">
+        <h1 className="text-lg font-bold text-[var(--quote-accent)] lg:hidden">秘境日本代購</h1>
         <button
-          className="rounded-md border border-[var(--text-primary)]/70 bg-white/80 px-3 py-2 text-sm font-medium text-[var(--text-primary)] shadow-sm transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] dark:bg-[var(--bg-card)]"
+          className="hidden rounded-md border border-[var(--text-primary)]/70 bg-white/80 px-3 py-2 text-sm font-medium text-[var(--text-primary)] shadow-sm transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] dark:bg-[var(--bg-card)] lg:block"
           onClick={scrollToProcess}
           type="button"
         >
@@ -37,7 +49,16 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
         </Button>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+      <details className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] text-sm lg:hidden">
+        <summary className="cursor-pointer px-3 py-2.5 font-medium text-[var(--quote-accent)]">代購須知</summary>
+        <div className="space-y-3 border-t border-[var(--border-default)] p-3">
+          <section>{unavailableStores}</section>
+          <p className="text-[var(--text-secondary)]">{storeRateNotice}</p>
+          <a href="#order-process" className="inline-block font-semibold text-[var(--quote-accent)] underline">查看代購流程</a>
+        </div>
+      </details>
+
+      <div className="hidden gap-5 lg:grid lg:grid-cols-[1.35fr_1fr]">
         <a
           href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet"
           target="_blank"
@@ -54,17 +75,12 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
 
         <div className="grid gap-5">
           <section className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-6 leading-7 shadow-[var(--shadow-soft)]">
-            <h2 className="mb-2 font-bold">無提供代購的網站：</h2>
-            <ol className="mb-4 list-decimal space-y-1 pl-5">
-              <li>yahoo購物jp</li>
-              <li>mercari</li>
-            </ol>
-            <p>有些品項在多平台有販售，可以找找樂天 jp 或 amazon</p>
+            {unavailableStores}
           </section>
 
           <section className="rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-ultra-light)] p-6 text-[var(--notice)] shadow-[var(--shadow-soft)]">
             <p className="font-bold leading-7">
-              zozotown、can online shop 匯率請依照 IG、粉絲專頁公告進行編輯！！（目前 0.23）
+              {storeRateNotice}
             </p>
           </section>
         </div>

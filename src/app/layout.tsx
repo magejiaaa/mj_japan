@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Analytics } from "@vercel/analytics/react"
 
@@ -10,6 +10,8 @@ export const metadata: Metadata = {
     'google-site-verification': 'LctgswFN5j-wK806zPBsuGYxy_hrpZmkP9DRlirlcYk'
   },
 }
+
+export const viewport: Viewport = { viewportFit: 'cover' }
 
 export default function RootLayout({
   children,

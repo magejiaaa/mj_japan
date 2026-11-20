@@ -30,7 +30,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRateChange }: Exchan
   }
 
   return (
-    <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
+    <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">當前匯率 JP</CardTitle>
       </CardHeader>

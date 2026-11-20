@@ -26,15 +26,14 @@ export default function PlatformSelector({ selectedPlatform, onPlatformChange }:
         <RadioGroup
           value={selectedPlatform}
           onValueChange={(value) => onPlatformChange(value as OrderPlatform)}
-          className="space-y-4 pt-4"
+          aria-label="選擇下單平台"
+          className="gap-1 lg:pt-2"
         >
           {platforms.map((platform) => (
-            <div key={platform.value} className="flex items-center space-x-3">
-              <RadioGroupItem value={platform.value} id={platform.value} className="border-[var(--color-primary)] text-[var(--color-primary)]" />
-              <Label htmlFor={platform.value} className="cursor-pointer text-[var(--text-primary)]">
+            <Label key={platform.value} htmlFor={platform.value} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 py-2 leading-snug text-[var(--text-primary)] ${selectedPlatform === platform.value ? "bg-[var(--color-primary-light)]" : "hover:bg-[var(--color-primary-ultra-light)]"}`}>
+              <RadioGroupItem value={platform.value} id={platform.value} className="size-5 shrink-0 border-[var(--quote-accent)] text-[var(--quote-accent)]" />
                 {platform.label}
-              </Label>
-            </div>
+            </Label>
           ))}
         </RadioGroup>
       </CardContent>

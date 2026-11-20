@@ -35,6 +35,10 @@ body {
     --color-primary-hover: #E58C9D;
     --color-primary-light: #FCE4E8;
     --color-primary-ultra-light: #FFF5F7;
+    --quote-accent: #8A2947;
+    --quote-action: #8A2947;
+    --quote-action-hover: #6F1D36;
+    --quote-action-text: #FFFFFF;
 
     /* Background */
     --bg-page: #FFF9F8;
@@ -87,6 +91,10 @@ body {
     --color-primary-hover: #F4B0BC;
     --color-primary-light: #503A40;
     --color-primary-ultra-light: #3B2C31;
+    --quote-accent: #FFBDC9;
+    --quote-action: #F4B0BC;
+    --quote-action-hover: #FFC7D1;
+    --quote-action-text: #36151F;
 
     /* Background */
     --bg-page: #1C1818;
@@ -133,6 +141,6 @@ body {
 
 @layer components {
   .social-link-btn {
-    @apply inline-flex h-10 min-w-[140px] items-center justify-center gap-2 whitespace-nowrap rounded-md border border-[var(--color-primary-hover)] bg-white px-5 text-sm font-medium text-[var(--color-primary-hover)] ring-offset-background transition-colors hover:bg-[var(--color-primary-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:bg-[var(--bg-card)] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
+    @apply inline-flex h-11 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-[var(--quote-accent)] bg-[var(--bg-card)] px-3 text-sm font-medium text-[var(--quote-accent)] ring-offset-background transition-colors hover:bg-[var(--color-primary-light)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:min-w-[140px] lg:px-5 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0;
   }
 }

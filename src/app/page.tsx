@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { ArrowUp, Facebook, Instagram } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ArrowUp } from "lucide-react"
 import Header from "@/components/header"
 import ExchangeRate from "@/components/exchange-rate"
 import ProductForm from "@/components/product-form"
@@ -16,13 +16,13 @@ import { applyShippingRules, getProductStoreKey, isCustomStoreKey, storeShipping
 import { applyCategoryRules, categoryMap } from "@/lib/categoryMap"
 import { loadMjJapanSettings, type MjJapanRemoteSettings } from "@/lib/mjJapanSettings"
 import { calculateQuote } from "@/lib/quote"
+import { readQuoteDraft, saveQuoteDraft } from "@/lib/quoteDraft"
 import type { ImportedProduct } from "@/lib/quoteText"
-
-let nextProductId = 0
+import { useQuoteNavigation } from "@/hooks/use-quote-navigation"
+import QuoteSocialLinks from "@/components/quote-social-links"
 
 function createProductId() {
-  nextProductId += 1
-  return `product-${nextProductId}`
+  return Array.from(crypto.getRandomValues(new Uint32Array(3))).join("-")
 }
 
 export default function Home() {
@@ -44,12 +44,37 @@ export default function Home() {
   const [selectedPlatform, setSelectedPlatform] = useState<OrderPlatform>("myship")
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
+  const [draftLoaded, setDraftLoaded] = useState(false)
+  const addedProductId = useRef<string | null>(null)
+  const { viewingQuote, onViewQuote } = useQuoteNavigation()
   // 有價格的商品預設納入估價，只記錄手動取消勾選的項目。
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const quote = useMemo(() => {
     const shopeeRate = Number(remoteSettings.shopeeRate ?? 0.175)
     return calculateQuote(products, excludedIds, exchangeRate, shopeeRate, categoryMap, storeShippingConfig)
   }, [products, excludedIds, exchangeRate, remoteSettings])
+
+  useEffect(() => {
+    const saved = readQuoteDraft()
+    if (saved) {
+      setProducts(saved.products)
+      setExcludedIds(new Set(saved.excludedIds))
+      setSelectedPlatform(saved.selectedPlatform)
+    }
+    setDraftLoaded(true)
+  }, [])
+
+  useEffect(() => {
+    if (draftLoaded) saveQuoteDraft({ products, excludedIds: Array.from(excludedIds), selectedPlatform })
+  }, [draftLoaded, products, excludedIds, selectedPlatform])
+
+  useEffect(() => {
+    if (addedProductId.current === null) return
+    const field = document.getElementById(`url-${addedProductId.current}`)
+    addedProductId.current = null
+    field?.focus({ preventScroll: true })
+    field?.scrollIntoView({ block: "center" })
+  }, [products])
 
   const handleImportProducts = (imported: ImportedProduct[]) => {
     if (imported.length === 0) return
@@ -144,11 +169,12 @@ export default function Home() {
   }
 
   const handleAddProduct = () => {
-    const lastProduct = products[products.length - 1]
-    setProducts([
-      ...products,
-      {
-        id: createProductId(),
+    const id = createProductId()
+    addedProductId.current = id
+    setProducts((current) => {
+      const lastProduct = current[current.length - 1]
+      return [...current, {
+        id,
         url: "",
         color: "",
         store: lastProduct?.store || "free",
@@ -157,13 +183,8 @@ export default function Home() {
         quantity: 1,
         category: "clothing",
         customShippingFee: lastProduct?.customShippingFee ?? 0,
-      },
-    ])
-
-    setTimeout(() => {
-      const productList = document.querySelector(window.innerWidth > 768 ? ".product-list" : ".product-list-box")
-      productList?.scrollTo({ top: productList.scrollHeight, behavior: "smooth" })
-    }, 0)
+      }]
+    })
   }
 
   const handleRemoveProduct = (id: string) => {
@@ -192,65 +213,59 @@ export default function Home() {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
+    <ThemeProvider attribute="class" forcedTheme={darkMode ? "dark" : "light"}>
       <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
-        <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
+        <div className="min-h-screen bg-[var(--bg-page)] pb-40 text-[var(--text-primary)] lg:pb-0">
           <div className="mx-auto max-w-7xl">
             <Header toggleDarkMode={() => setDarkMode(!darkMode)} darkMode={darkMode} />
 
             <main className="mt-6 grid grid-cols-1 gap-6 px-4 lg:grid-cols-2">
-              {/* 當前匯率 JP */}
-              <ExchangeRate
-                rate={exchangeRate}
-                lastUpdated={lastUpdated}
-                onRefresh={fetchExchangeRate}
-                onRateChange={setExchangeRate}
-              />
-              <PlatformSelector selectedPlatform={selectedPlatform} onPlatformChange={setSelectedPlatform} />
-              {/* 商品項目 */}
-              <ProductForm
-                products={products}
-                onAddProduct={handleAddProduct}
-                onRemoveProduct={handleRemoveProduct}
-                onProductChange={handleProductChange}
-                onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
-                onImportProducts={handleImportProducts}
-              />
-              <CalculationResult
-                products={products}
-                quote={quote}
-                selectedPlatform={selectedPlatform}
-                exchangeRate={exchangeRate}
-                onToggleCheck={toggleCheck}
-              />
-              {/* 複製傳送 */}
-              <div className="rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-light)] p-4 text-center shadow-[var(--shadow-soft)] lg:col-span-2 md:flex md:items-center md:justify-center md:gap-8">
-                <p className="mb-3 font-bold text-[var(--color-primary-hover)] md:mb-0">複製後傳送至</p>
-                <div className="flex flex-wrap justify-center gap-4">
-                  <a
-                    href="https://www.instagram.com/mjj_japan?utm_source=ig_web_button_share_sheet"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="social-link-btn"
-                  >
-                    <Instagram />
-                    Instagram
-                  </a>
-                  <a
-                    href="https://www.facebook.com/mjJapan/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="social-link-btn"
-                  >
-                    <Facebook />
-                    Facebook
-                  </a>
+              <div className="lg:col-start-1 lg:row-start-1">
+                <ExchangeRate
+                  rate={exchangeRate}
+                  lastUpdated={lastUpdated}
+                  onRefresh={fetchExchangeRate}
+                  onRateChange={setExchangeRate}
+                />
+              </div>
+
+              <section id="products" aria-label="商品項目" className="order-1 scroll-mt-4 lg:col-start-1 lg:row-start-2">
+                <ProductForm
+                  products={products}
+                  onAddProduct={handleAddProduct}
+                  onRemoveProduct={handleRemoveProduct}
+                  onProductChange={handleProductChange}
+                  onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
+                  onImportProducts={handleImportProducts}
+                />
+              </section>
+
+              <section id="quote" tabIndex={-1} aria-label="平台估價" className="order-2 scroll-mt-4 space-y-4 outline-none lg:contents lg:space-y-0">
+                <div className="lg:col-start-2 lg:row-start-1">
+                  <PlatformSelector selectedPlatform={selectedPlatform} onPlatformChange={setSelectedPlatform} />
                 </div>
+                <div className="lg:col-start-2 lg:row-start-2">
+                  <CalculationResult
+                    products={products}
+                    quote={quote}
+                    selectedPlatform={selectedPlatform}
+                    exchangeRate={exchangeRate}
+                    onToggleCheck={toggleCheck}
+                    viewingQuote={viewingQuote}
+                    onViewQuote={onViewQuote}
+                  />
+                </div>
+              </section>
+
+              <div className="hidden rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-light)] p-4 text-center shadow-[var(--shadow-soft)] lg:col-span-2 lg:row-start-3 lg:flex lg:items-center lg:justify-center lg:gap-8">
+                <p className="font-bold text-[var(--quote-accent)]">複製後傳送至</p>
+                <QuoteSocialLinks className="flex flex-wrap justify-center gap-4" />
               </div>
 
               <Button
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="fixed bottom-4 right-4 rounded-full bg-[var(--color-primary)] text-white shadow-lg hover:bg-[var(--color-primary-hover)]"
+                aria-label="返回頁首"
+                className="fixed bottom-4 right-4 hidden rounded-full bg-[var(--quote-action)] text-[var(--quote-action-text)] shadow-lg hover:bg-[var(--quote-action-hover)] lg:inline-flex"
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>

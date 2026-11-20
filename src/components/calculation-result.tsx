@@ -1,16 +1,19 @@
 "use client"
 
-import { useState } from "react"
-import { Copy } from "lucide-react"
+import { useEffect, useRef, useState, type MouseEventHandler } from "react"
+import { Check, ChevronDown, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import type { OrderPlatform, ProductItem } from "@/lib/types"
 import type { Quote } from "@/lib/quote"
 import { formatCurrency, formatQuoteText, platformNames } from "@/lib/quoteText"
 import ShippingBreakdown from "@/components/shipping-breakdown"
 import { getProductStoreKey, getStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
+import QuoteSocialLinks from "@/components/quote-social-links"
 
 interface CalculationResultProps {
   products: ProductItem[]
@@ -18,161 +21,240 @@ interface CalculationResultProps {
   selectedPlatform: OrderPlatform
   exchangeRate: number
   onToggleCheck: (id: string) => void
+  viewingQuote: boolean
+  onViewQuote: MouseEventHandler<HTMLAnchorElement>
 }
 
 const platforms = ["shopee", "myship", "iopen"] as const
+const quoteAction = "bg-[var(--quote-action)] text-[var(--quote-action-text)] hover:bg-[var(--quote-action-hover)]"
+
 export default function CalculationResult({
   products,
   quote,
   selectedPlatform,
   exchangeRate,
   onToggleCheck,
+  viewingQuote,
+  onViewQuote,
 }: CalculationResultProps) {
-  const [copied, setCopied] = useState(false)
+  const [copiedQuote, setCopiedQuote] = useState<{ quote: Quote; platform: OrderPlatform } | null>(null)
+  const [manualText, setManualText] = useState("")
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const copiedStatus = useRef<HTMLParagraphElement>(null)
   const { summary, items, stores } = quote
   const platformName = platformNames[selectedPlatform]
   const finalPrice = summary.platformPrices[selectedPlatform]
+  const mobilePrice = `NT$${finalPrice.toLocaleString("zh-TW")}`
+  const selectedCount = products.reduce((count, product) => count + (items.has(product.id) ? product.quantity : 0), 0)
+  const hasPricedProducts = products.some((product) => product.price > 0)
+  const copied = copiedQuote?.quote === quote && copiedQuote.platform === selectedPlatform
 
-  const copyToClipboard = () => {
-    if (items.size === 0) {
-      alert("請選擇至少一個商品")
-      return
-    }
+  useEffect(() => {
+    if (copied && viewingQuote) copiedStatus.current?.focus({ preventScroll: true })
+  }, [copied, viewingQuote])
 
+  const copyToClipboard = async () => {
+    if (items.size === 0) return
     const text = formatQuoteText(products, quote, selectedPlatform, exchangeRate)
-
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedQuote({ quote, platform: selectedPlatform })
+    } catch {
+      setManualText(text)
+    }
   }
 
   return (
-    <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl">計算結果</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <section className="space-y-3">
-            <h3 className="font-bold">商品詳情</h3>
-            {products.every((product) => product.price <= 0) && <div className="text-sm text-[var(--text-secondary)]">尚無商品資料</div>}
+    <>
+      <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
+        <CardHeader className="hidden pb-2 lg:flex">
+          <CardTitle className="text-xl">計算結果</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5 p-4 lg:p-6 lg:pt-0">
+          <section className="rounded-lg bg-[var(--color-primary-ultra-light)] p-4 lg:hidden">
+            <h2 className="font-bold">平台估價</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">{platformName}</p>
+            {items.size > 0 ? (
+              <p className="my-2 break-all text-4xl font-bold tracking-tight text-[var(--quote-accent)]">{mobilePrice}</p>
+            ) : (
+              <p className="my-3 text-sm text-[var(--text-secondary)]">{hasPricedProducts ? "請勾選要估價的商品" : "填寫商品價格後，就會顯示估價"}</p>
+            )}
+            {selectedPlatform !== "myship" && <p className="text-sm text-[var(--text-secondary)]">{selectedPlatform === "iopen" ? "已含 2.5% 手續費" : "已含蝦皮手續費"}</p>}
+            {selectedPlatform !== "shopee" && (
+              <p className="mt-2 border-t border-[var(--border-default)] pt-2 text-sm">台灣運費 NT$38 於平台結帳另計{selectedPlatform === "iopen" && "，可用免運券"}</p>
+            )}
+          </section>
+          <div className="space-y-5 lg:space-y-6">
+            <section className="space-y-3">
+              <h3 className="font-bold">商品詳情</h3>
+              {products.every((product) => product.price <= 0) && <div className="text-sm text-[var(--text-secondary)]">尚無商品資料</div>}
 
-            {products.map((product, index) => {
-              if (product.price <= 0) return null
-              const categoryInfo = getCategoryInfo(product.category)
-              const storeName = getStoreName(getProductStoreKey(product), product.customStoreName)
-              const priceInfo = items.get(product.id)?.prices
-              const isChecked = items.has(product.id)
+              {products.map((product, index) => {
+                if (product.price <= 0) return null
+                const categoryInfo = getCategoryInfo(product.category)
+                const storeName = getStoreName(getProductStoreKey(product), product.customStoreName)
+                const priceInfo = items.get(product.id)?.prices
+                const isChecked = items.has(product.id)
 
-              return (
-                <label
-                  key={product.id}
-                  className="block cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-ultra-light)] p-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <Checkbox checked={isChecked} onCheckedChange={() => onToggleCheck(product.id)} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="font-medium">商品 #{index + 1}</div>
-                        <div className="text-xs text-[var(--text-secondary)]">
-                          {storeName} | {categoryInfo.name} ({categoryInfo.weight})
+                return (
+                  <label
+                    key={product.id}
+                    className="block cursor-pointer rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] px-3 py-2.5 lg:bg-[var(--color-primary-ultra-light)] lg:p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox aria-label={`商品 ${index + 1} 納入估價`} checked={isChecked} onCheckedChange={() => onToggleCheck(product.id)} className="mt-0.5 size-5 border-[var(--quote-accent)] data-[state=checked]:bg-[var(--quote-action)] data-[state=checked]:text-[var(--quote-action-text)]" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="text-sm font-medium">商品 {index + 1}</div>
+                          <div className="text-sm font-semibold lg:hidden">{formatCurrency(product.price, "JPY")}{product.quantity > 1 && ` × ${product.quantity}`}</div>
+                          <div className="hidden text-xs text-[var(--text-secondary)] lg:block">
+                            {storeName} | {categoryInfo.name} ({categoryInfo.weight})
+                          </div>
                         </div>
+                        <div className="mt-1 text-xs text-[var(--text-secondary)] lg:hidden">{categoryInfo.name} · {storeName}</div>
+                        <div className="mt-2 hidden truncate text-xs text-[var(--text-secondary)] lg:block">{product.url || "[尚未填寫網址]"}</div>
+                        <div className="mt-2 hidden grid-cols-2 gap-2 text-sm lg:grid">
+                          <div>
+                            <span className="text-[var(--text-secondary)]">價格：</span>
+                            {formatCurrency(product.price, "JPY")}
+                          </div>
+                          <div>
+                            <span className="text-[var(--text-secondary)]">數量：</span>
+                            {product.quantity}
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-[var(--text-secondary)]">顏色尺寸：</span>
+                            {product.color || "-"}
+                          </div>
+                        </div>
+
+                        {isChecked && (
+                          <div className="mt-3 hidden grid-cols-3 gap-2 border-t border-[var(--border-default)] pt-3 text-xs lg:grid">
+                            {platforms.map((platform) => (
+                              <div key={platform} className={selectedPlatform === platform ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
+                                <div>{platformNames[platform]}估價：</div>
+                                <div>{formatCurrency(priceInfo?.[platform] ?? 0, "TWD")}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="mt-2 truncate text-xs text-[var(--text-secondary)]">{product.url || "[尚未填寫網址]"}</div>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-[var(--text-secondary)]">價格：</span>
-                          {formatCurrency(product.price, "JPY")}
-                        </div>
-                        <div>
-                          <span className="text-[var(--text-secondary)]">數量：</span>
-                          {product.quantity}
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-[var(--text-secondary)]">顏色尺寸：</span>
-                          {product.color || "-"}
-                        </div>
-                      </div>
-
-                      {isChecked && (
-                        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--border-default)] pt-3 text-xs">
-                          {platforms.map((platform) => (
-                            <div key={platform} className={selectedPlatform === platform ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
-                              <div>{platformNames[platform]}估價：</div>
-                              <div>{formatCurrency(priceInfo?.[platform] ?? 0, "TWD")}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </label>
-              )
-            })}
-          </section>
+                  </label>
+                )
+              })}
+            </section>
 
-          <section className="border-t border-[var(--border-default)] pt-5">
-            <h3 className="mb-4 font-bold">訂單摘要</h3>
-            <div className="space-y-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <span>商品總額（日幣）：</span>
-                <span>{formatCurrency(summary.totalJPY, "JPY")}</span>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span>日本國內運費（日幣）：</span>
-                <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
-              </div>
+            <Button type="button" variant="outline" aria-expanded={detailsOpen} aria-controls="quote-fees" onClick={() => setDetailsOpen(!detailsOpen)} className="h-11 w-full justify-between border-[var(--border-default)] bg-[var(--color-primary-light)] text-[var(--quote-accent)] lg:hidden">
+              {detailsOpen ? "收合費用明細" : "查看費用明細"}
+              <ChevronDown aria-hidden="true" className={detailsOpen ? "rotate-180" : undefined} />
+            </Button>
 
-              {Array.from(stores.values(), ({ store, customStoreName, ...shipping }) => (
-                <ShippingBreakdown
-                  key={store}
-                  storeName={getStoreName(store, customStoreName)}
-                  {...shipping}
-                />
-              ))}
+            <section id="quote-fees" className={`${detailsOpen ? "block" : "hidden"} border-t border-[var(--border-default)] pt-5 lg:block`}>
+              <h3 className="mb-4 font-bold">訂單摘要</h3>
+              <div className="space-y-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span>商品總額（日幣）：</span>
+                  <span>{formatCurrency(summary.totalJPY, "JPY")}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span>日本國內運費（日幣）：</span>
+                  <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
+                </div>
 
-              {items.size > 0 && summary.totalDomesticShippingJPY === 0 && <div className="text-xs italic text-green-600">*全館店家已達免運標準</div>}
+                {Array.from(stores.values(), ({ store, customStoreName, ...shipping }) => (
+                  <ShippingBreakdown
+                    key={store}
+                    storeName={getStoreName(store, customStoreName)}
+                    {...shipping}
+                  />
+                ))}
 
-              <div className="flex justify-between gap-4">
-                <span>國際運費（台幣）：</span>
-                <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
+                {items.size > 0 && summary.totalDomesticShippingJPY === 0 && <div className="text-xs italic text-green-600">*全館店家已達免運標準</div>}
+
+                <div className="flex justify-between gap-4">
+                  <span>國際運費（台幣）：</span>
+                  <span>{formatCurrency(summary.totalInternationalShipping, "TWD")}</span>
+                </div>
+                <div className="flex justify-between gap-4 font-bold">
+                  <span>蝦皮價值（含手續費）：</span>
+                  <span>{formatCurrency(summary.platformPrices.shopee, "TWD")}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-base font-bold">
+                  <span>賣貨便下單費用：</span>
+                  <span>{formatCurrency(summary.platformPrices.myship, "TWD")}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-base font-bold">
+                  <span>iopen mall 下單費用（含手續費）：</span>
+                  <span>{formatCurrency(summary.platformPrices.iopen, "TWD")}</span>
+                </div>
+                <div className="flex justify-between gap-4 pt-3 font-bold text-[var(--color-primary-hover)]">
+                  <span>選擇下單平台：</span>
+                  <span>{platformName}</span>
+                </div>
+                <div className="flex justify-between gap-4 text-lg font-bold">
+                  <span>平台估價：</span>
+                  <span>{formatCurrency(finalPrice, "TWD")}</span>
+                </div>
               </div>
-              <div className="flex justify-between gap-4 font-bold">
-                <span>蝦皮價值（含手續費）：</span>
-                <span>{formatCurrency(summary.platformPrices.shopee, "TWD")}</span>
-              </div>
-              <div className="flex justify-between gap-4 text-base font-bold">
-                <span>賣貨便下單費用：</span>
-                <span>{formatCurrency(summary.platformPrices.myship, "TWD")}</span>
-              </div>
-              <div className="flex justify-between gap-4 text-base font-bold">
-                <span>iopen mall 下單費用（含手續費）：</span>
-                <span>{formatCurrency(summary.platformPrices.iopen, "TWD")}</span>
-              </div>
-              <div className="flex justify-between gap-4 pt-3 font-bold text-[var(--color-primary-hover)]">
-                <span>選擇下單平台：</span>
-                <span>{platformName}</span>
-              </div>
-              <div className="flex justify-between gap-4 text-lg font-bold">
-                <span>應付金額：</span>
-                <span>{formatCurrency(finalPrice, "TWD")}</span>
-              </div>
+            </section>
+
+            <Button onClick={copyToClipboard} disabled={items.size === 0} className={`${quoteAction} hidden w-full lg:inline-flex`}>
+              <Copy className="mr-2 h-4 w-4" />
+              {copied ? "已複製報價" : "複製報價"}
+            </Button>
+
+            <p className="hidden leading-7 lg:block">
+              本網站只提供計算價格並複製的功能，無法下單！
+              <br />
+              需要將複製的內容貼到 IG/FB 訊息欄，感謝配合
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+      <aside aria-label="手機估價操作" className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--border-default)] bg-[var(--bg-card)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-6px_24px_rgba(72,28,44,0.14)] lg:hidden">
+        {viewingQuote && copied ? (
+          <div className="mx-auto max-w-xl space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p ref={copiedStatus} tabIndex={-1} role="status" className="flex items-center gap-2 font-bold outline-none">
+                <Check aria-hidden="true" className="size-4 text-[var(--quote-accent)]" /> 已複製報價
+              </p>
+              <Button type="button" variant="ghost" onClick={copyToClipboard} className="h-8 px-2 text-xs text-[var(--quote-accent)]">
+                再複製
+              </Button>
             </div>
-          </section>
+            <p className="text-sm text-[var(--text-secondary)]">貼到 Instagram 或 Facebook 訊息即可</p>
+            <QuoteSocialLinks className="grid grid-cols-2 gap-2" />
+          </div>
+        ) : (
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-[var(--text-secondary)]">已選 {selectedCount} 件</p>
+              <p className="break-all text-2xl font-bold leading-tight text-[var(--quote-accent)]">{items.size > 0 ? mobilePrice : "—"}</p>
+            </div>
+            {viewingQuote ? (
+              <Button disabled={items.size === 0} onClick={copyToClipboard} className={`${quoteAction} h-11 shrink-0 px-5`}>
+                <Copy aria-hidden="true" className="size-4" /> 複製報價
+              </Button>
+            ) : (
+              <Button asChild className={`${quoteAction} h-11 shrink-0 px-5`}>
+                <a href="#quote" onClick={onViewQuote}>查看估價</a>
+              </Button>
+            )}
+          </div>
+        )}
+      </aside>
 
-          <Button onClick={copyToClipboard} className="w-full bg-[var(--color-primary-light)] text-[var(--color-primary-hover)] hover:bg-[var(--color-primary)] hover:text-white">
-            <Copy className="mr-2 h-4 w-4" />
-            {copied ? "已複製" : "一鍵複製"}
-          </Button>
-
-          <p className="leading-7">
-            本網站只提供計算價格並複製的功能，無法下單！
-            <br />
-            需要將複製的內容貼到 IG/FB 訊息欄，感謝配合
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      <Dialog open={manualText !== ""} onOpenChange={(open) => { if (!open) setManualText("") }}>
+        <DialogContent className="w-[calc(100%_-_2rem)] rounded-lg bg-[var(--bg-card)] text-[var(--text-primary)]">
+          <DialogHeader>
+            <DialogTitle>手動複製報價</DialogTitle>
+            <DialogDescription>瀏覽器無法自動複製，請選取下方文字，再貼到 Instagram 或 Facebook 訊息。</DialogDescription>
+          </DialogHeader>
+          <Textarea aria-label="報價文字" readOnly value={manualText} rows={7} onFocus={(event) => event.currentTarget.select()} />
+          <QuoteSocialLinks className="grid grid-cols-2 gap-2" />
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
