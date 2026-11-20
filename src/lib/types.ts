@@ -7,7 +7,8 @@ export interface ProductItem {
   quantity: number
   category: string
   color: string
-  customShippingFee?: number // 新增自定义运费字段
+  /** 同一店家的日本國內運費（日圓），整筆訂單只計一次。 */
+  customShippingFee?: number
 }
 
 export type OrderPlatform = "shopee" | "myship" | "iopen"
@@ -22,6 +23,5 @@ export interface CalculationSummary {
   totalInternationalShipping: number
   platformPrices: PlatformPrices
   grandTotal: number
-  selectedPlatform: OrderPlatform
 }
 

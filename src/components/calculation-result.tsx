@@ -5,119 +5,41 @@ import { Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { CalculationSummary, PlatformPrices, ProductItem } from "@/lib/types"
+import type { OrderPlatform, ProductItem } from "@/lib/types"
+import type { Quote } from "@/lib/quote"
+import { formatCurrency, formatQuoteText, platformNames } from "@/lib/quoteText"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import {
-  getCustomStoreKey,
-  getStoreName,
-  isCustomStoreKey,
-  normalizeCustomStoreName,
-  storeShippingConfig,
-} from "@/lib/storeConfig"
+import { getProductStoreKey, getStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 
 interface CalculationResultProps {
   products: ProductItem[]
-  summary: CalculationSummary
+  quote: Quote
+  selectedPlatform: OrderPlatform
   exchangeRate: number
-  storeAmounts: Map<string, number>
-  checkedIds: Set<string>
   onToggleCheck: (id: string) => void
-  itemPrices: Map<string, PlatformPrices>
 }
 
 const platforms = ["shopee", "myship", "iopen"] as const
-const platformNameMap = {
-  shopee: "蝦皮",
-  myship: "賣貨便",
-  iopen: "iopen mall",
-}
-
 export default function CalculationResult({
   products,
-  summary,
+  quote,
+  selectedPlatform,
   exchangeRate,
-  storeAmounts,
-  checkedIds,
   onToggleCheck,
-  itemPrices,
 }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
-  const checkedProducts = products.filter((product) => product.price > 0 && checkedIds.has(product.id))
-  const platformName = platformNameMap[summary.selectedPlatform]
-  const finalPrice = summary.platformPrices[summary.selectedPlatform]
-
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("zh-TW", {
-      style: "currency",
-      currency: currency === "JPY" ? "JPY" : "TWD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  const getConfiguredDomesticShippingFee = (store: string, storeTotal: number) => {
-    const config = storeShippingConfig[store] || storeShippingConfig.default
-    if (config.specialRule === "canshop_330_after_threshold" && storeTotal >= config.freeThreshold) return 330
-    return storeTotal >= config.freeThreshold ? 0 : config.fee
-  }
-
-  const getProductStoreKey = (product: ProductItem): string => {
-    if (isCustomStoreKey(product.store)) return product.store
-    if (product.store === "other") {
-      const customStoreName = normalizeCustomStoreName(product.customStoreName || "")
-      return customStoreName ? getCustomStoreKey(customStoreName) : "other"
-    }
-    return product.store
-  }
-
-  const getDisplayStoreName = (product: ProductItem): string => {
-    return getStoreName(getProductStoreKey(product), product.customStoreName)
-  }
-
-  const getInternationalShippingFee = (product: ProductItem, otherCategoryProcessed: boolean) => {
-    if (product.category === "other") return otherCategoryProcessed ? 0 : 200
-    return getCategoryInfo(product.category).fee * product.quantity
-  }
+  const { summary, items, stores } = quote
+  const platformName = platformNames[selectedPlatform]
+  const finalPrice = summary.platformPrices[selectedPlatform]
 
   const copyToClipboard = () => {
-    if (checkedProducts.length === 0) {
+    if (items.size === 0) {
       alert("請選擇至少一個商品")
       return
     }
 
-    let otherCategoryProcessed = false
-    let text = "===== 秘境日本代購估價資料 =====\n\n"
-    text += `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣\n`
-    text += `下單平台: ${platformName}\n\n`
-    text += "商品:\n"
-
-    checkedProducts.forEach((product, index) => {
-      const categoryInfo = getCategoryInfo(product.category)
-      const storeName = getDisplayStoreName(product)
-      const internationalShippingFee = getInternationalShippingFee(product, otherCategoryProcessed)
-      if (product.category === "other" && internationalShippingFee > 0) otherCategoryProcessed = true
-
-      text += `${index + 1}. ${product.url || "[尚未填寫網址]"}\n`
-      text += `   店家: ${storeName}\n`
-      text += `   價格: ${formatCurrency(product.price, "JPY")}  數量: ${product.quantity}\n`
-      text += `   顏色尺寸: ${product.color || "-"}\n`
-      text += `   類別: ${categoryInfo.name} ${formatCurrency(internationalShippingFee, "TWD")} (${categoryInfo.weight}/件)\n`
-      if (isCustomStoreKey(getProductStoreKey(product)) || product.store === "other") {
-        text += `   日本國內運費: ${formatCurrency(product.customShippingFee || 0, "JPY")}\n`
-      }
-      // 加入分攤單品價格
-      const priceInfo = itemPrices.get(product.id)
-      if (priceInfo) {
-        text += `   【${platformName}單品價】: ${formatCurrency(priceInfo[summary.selectedPlatform], "TWD")}\n\n`
-      }
-    })
-
-    text += "訂單摘要:\n"
-    text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")}\n`
-    text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")}\n`
-    text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-    text += `平台總價: ${formatCurrency(finalPrice, "TWD")}\n`
+    const text = formatQuoteText(products, quote, selectedPlatform, exchangeRate)
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
@@ -139,9 +61,9 @@ export default function CalculationResult({
             {products.map((product, index) => {
               if (product.price <= 0) return null
               const categoryInfo = getCategoryInfo(product.category)
-              const storeName = getDisplayStoreName(product)
-              const priceInfo = itemPrices.get(product.id)
-              const isChecked = checkedIds.has(product.id)
+              const storeName = getStoreName(getProductStoreKey(product), product.customStoreName)
+              const priceInfo = items.get(product.id)?.prices
+              const isChecked = items.has(product.id)
 
               return (
                 <label
@@ -176,8 +98,8 @@ export default function CalculationResult({
                       {isChecked && (
                         <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--border-default)] pt-3 text-xs">
                           {platforms.map((platform) => (
-                            <div key={platform} className={summary.selectedPlatform === platform ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
-                              <div>{platformNameMap[platform]}估價：</div>
+                            <div key={platform} className={selectedPlatform === platform ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
+                              <div>{platformNames[platform]}估價：</div>
                               <div>{formatCurrency(priceInfo?.[platform] ?? 0, "TWD")}</div>
                             </div>
                           ))}
@@ -202,30 +124,15 @@ export default function CalculationResult({
                 <span>{formatCurrency(summary.totalDomesticShippingJPY, "JPY")}</span>
               </div>
 
-              {Array.from(storeAmounts.entries()).map(([store, storeTotal]) => {
-                const storeProducts = products.filter((product) => getProductStoreKey(product) === store && product.price > 0)
-                if (storeProducts.length === 0) return null
-                const firstProduct = storeProducts[0]
-                const isCustomShipping = (isCustomStoreKey(store) || store === "other") && firstProduct.customShippingFee !== undefined
-                const domesticShippingFee =
-                  isCustomShipping
-                    ? firstProduct.customShippingFee ?? 0
-                    : getConfiguredDomesticShippingFee(store, storeTotal)
+              {Array.from(stores.values(), ({ store, customStoreName, ...shipping }) => (
+                <ShippingBreakdown
+                  key={store}
+                  storeName={getStoreName(store, customStoreName)}
+                  {...shipping}
+                />
+              ))}
 
-                return (
-                  <ShippingBreakdown
-                    key={store}
-                    domesticShippingJPY={domesticShippingFee}
-                    domesticShippingTWD={domesticShippingFee * exchangeRate}
-                    store={store}
-                    storeName={getStoreName(store, firstProduct.customStoreName)}
-                    storeTotal={storeTotal}
-                    isCustomShipping={isCustomShipping}
-                  />
-                )
-              })}
-
-              {summary.totalDomesticShippingJPY === 0 && <div className="text-xs italic text-green-600">*全館店家已達免運標準</div>}
+              {items.size > 0 && summary.totalDomesticShippingJPY === 0 && <div className="text-xs italic text-green-600">*全館店家已達免運標準</div>}
 
               <div className="flex justify-between gap-4">
                 <span>國際運費（台幣）：</span>

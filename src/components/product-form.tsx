@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import ProductItem from "@/components/product-item"
 import type { ProductItem as ProductItemType } from "@/lib/types"
-import { getCustomStoreKey, getStoreKey, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
-import { categoryMap, getCategoryKey } from "@/lib/categoryMap"
+import { getCustomStoreKey, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
+import { parseQuoteProducts, type ImportedProduct } from "@/lib/quoteText"
 
 interface ProductFormProps {
   products: ProductItemType[]
@@ -16,7 +16,7 @@ interface ProductFormProps {
   onRemoveProduct: (id: string) => void
   onProductChange: (product: ProductItemType) => void
   onOpenCategoryModal: () => void
-  onImportProducts: (imported: ProductItemType[]) => void
+  onImportProducts: (imported: ImportedProduct[]) => void
 }
 
 export default function ProductForm({
@@ -44,63 +44,7 @@ export default function ProductForm({
     return Array.from(map, ([key, option]) => ({ key, ...option }))
   }, [products])
 
-  function parseProductData(text: string): ProductItemType[] {
-    const items: string[] = []
-    let currentItem: string[] = []
-
-    text.split(/\r?\n/).forEach((line) => {
-      if (/^\s*訂單摘要:/.test(line)) {
-        if (currentItem.length > 0) items.push(currentItem.join("\n"))
-        currentItem = []
-        return
-      }
-
-      if (/^\s*\d+\.\s+/.test(line)) {
-        if (currentItem.length > 0) items.push(currentItem.join("\n"))
-        currentItem = [line]
-        return
-      }
-
-      if (currentItem.length > 0) currentItem.push(line)
-    })
-
-    if (currentItem.length > 0) items.push(currentItem.join("\n"))
-
-    const parseAmount = (value: string | undefined) => (value ? Number(value.replace(/,/g, "")) : 0)
-
-    return items.map((item) => {
-      const urlMatch = item.match(/^\s*\d+\.\s*([^\n]+)/m)
-      const storeMatch = item.match(/(?:日本店家|店家):\s*(.*)/)
-      const priceMatch = item.match(/價格:\s*(?:[¥￥]|JPY|日幣)?\s*([\d,]+)/i)
-      const colorMatch = item.match(/顏色尺寸:\s*([\s\S]*?)\n\s*類別:/)
-      const categoryMatch = item.match(/類別:\s*(.*)/)
-      const quantityMatch = item.match(/數量:\s*(\d+)/)
-      const shippingMatch = item.match(/日本國內運費:\s*(?:[¥￥]|JPY|日幣)?\s*([\d,]+)/i)
-      const categoryText = categoryMatch?.[1]?.trim() || ""
-      const categoryName =
-        Object.values(categoryMap)
-          .map((category) => category.name)
-          .find((name) => categoryText.startsWith(name)) || categoryText.replace(/\s+(?:NT\$|\$)\s*[\d,]+.*$/, "").trim()
-
-      const storeName = storeMatch?.[1]?.trim() || ""
-      const knownStoreKey = storeName ? getStoreKey(storeName) : undefined
-      const customStoreName = knownStoreKey ? undefined : storeName
-
-      return {
-        id: Math.random().toString(36).slice(2),
-        url: urlMatch?.[1]?.trim() || "",
-        store: knownStoreKey || (customStoreName ? getCustomStoreKey(customStoreName) : "free"),
-        customStoreName,
-        price: parseAmount(priceMatch?.[1]),
-        color: colorMatch?.[1]?.trim() || "",
-        category: categoryName ? getCategoryKey(categoryName) || "clothing" : "clothing",
-        quantity: quantityMatch?.[1] ? Number(quantityMatch[1]) : 1,
-        customShippingFee: parseAmount(shippingMatch?.[1]),
-      }
-    })
-  }
-
-  const imported = parseProductData(importText)
+  const imported = parseQuoteProducts(importText)
   const importValid = importText.trim().length > 0 && imported.length > 0
 
   const handleImport = () => {
@@ -120,7 +64,7 @@ export default function ProductForm({
             className="bg-[var(--color-primary-light)] text-[var(--color-primary-hover)] hover:bg-[var(--color-primary)] hover:text-white"
           >
             <Plus className="mr-1 h-4 w-4" />
-            添加商品
+            新增商品
           </Button>
         </CardTitle>
       </CardHeader>
@@ -149,13 +93,13 @@ export default function ProductForm({
         </div>
 
         <div className="rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-ultra-light)] p-4">
-          <label className="mb-2 block text-sm font-medium">本網站一鍵複製的內容可貼上此區塊進行導入</label>
+          <label className="mb-2 block text-sm font-medium">貼上一鍵複製的估價內容即可匯入商品</label>
           <Textarea
             className="min-h-[105px] border-[var(--border-input)] bg-white text-[var(--text-primary)] dark:bg-[var(--bg-card)]"
             value={importText}
             onChange={(event) => setImportText(event.target.value)}
             rows={4}
-            placeholder="僅可辨識本網站導出的商品資料..."
+          placeholder="僅可辨識本網站匯出的商品資料…"
           />
           {importText && !importValid && <p className="mt-2 text-sm text-red-500">無法辨識貼上的商品資料，請確認格式</p>}
           {importValid && (
@@ -163,7 +107,7 @@ export default function ProductForm({
               onClick={handleImport}
               className="mt-3 w-full bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
             >
-              導入 {imported.length} 筆商品
+              匯入 {imported.length} 筆商品
             </Button>
           )}
         </div>

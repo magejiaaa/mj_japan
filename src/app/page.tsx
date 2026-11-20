@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ArrowUp, Facebook, Instagram } from "lucide-react"
 import Header from "@/components/header"
 import ExchangeRate from "@/components/exchange-rate"
@@ -11,16 +11,24 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
-import type { CalculationSummary, OrderPlatform, PlatformPrices, ProductItem } from "@/lib/types"
-import { getCustomStoreKey, getDomesticShippingFee, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
-import { getCategoryInfo } from "@/lib/categoryMap"
+import type { OrderPlatform, ProductItem } from "@/lib/types"
+import { applyShippingRules, getProductStoreKey, isCustomStoreKey, storeShippingConfig } from "@/lib/storeConfig"
+import { applyCategoryRules, categoryMap } from "@/lib/categoryMap"
 import { loadMjJapanSettings, type MjJapanRemoteSettings } from "@/lib/mjJapanSettings"
+import { calculateQuote } from "@/lib/quote"
+import type { ImportedProduct } from "@/lib/quoteText"
+
+let nextProductId = 0
+
+function createProductId() {
+  nextProductId += 1
+  return `product-${nextProductId}`
+}
 
 export default function Home() {
   const [exchangeRate, setExchangeRate] = useState<number>(0.23)
   const [lastUpdated, setLastUpdated] = useState<string>("-")
-  const [remoteSettings, setRemoteSettings] = useState<MjJapanRemoteSettings>({ shopeeRate: 0.175 })
-  const [settingsVersion, setSettingsVersion] = useState(0)
+  const [remoteSettings, setRemoteSettings] = useState<MjJapanRemoteSettings>({})
   const [products, setProducts] = useState<ProductItem[]>([
     {
       id: "1",
@@ -33,24 +41,20 @@ export default function Home() {
       category: "clothing",
     },
   ])
-  const [summary, setSummary] = useState<CalculationSummary>({
-    totalJPY: 0,
-    totalTWD: 0,
-    totalDomesticShippingJPY: 0,
-    totalDomesticShippingTWD: 0,
-    totalInternationalShipping: 0,
-    platformPrices: { shopee: 0, myship: 0, iopen: 0 },
-    grandTotal: 0,
-    selectedPlatform: "myship", // 默認賣貨便
-  })
-  const [itemPrices, setItemPrices] = useState<Map<string, PlatformPrices>>(new Map())
+  const [selectedPlatform, setSelectedPlatform] = useState<OrderPlatform>("myship")
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
-  // 只計算勾選的價格(預設勾選)
-  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  // 有價格的商品預設納入估價，只記錄手動取消勾選的項目。
+  const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
+  const quote = useMemo(() => {
+    const shopeeRate = Number(remoteSettings.shopeeRate ?? 0.175)
+    return calculateQuote(products, excludedIds, exchangeRate, shopeeRate, categoryMap, storeShippingConfig)
+  }, [products, excludedIds, exchangeRate, remoteSettings])
 
-  const handleImportProducts = (imported: ProductItem[]) => {
-    if (imported.length > 0) setProducts(imported)
+  const handleImportProducts = (imported: ImportedProduct[]) => {
+    if (imported.length === 0) return
+    setProducts(imported.map((product) => ({ ...product, id: createProductId() })))
+    setExcludedIds(new Set())
   }
 
   const fetchExchangeRate = async (): Promise<boolean> => {
@@ -96,12 +100,7 @@ export default function Home() {
     return false
   }
 
-  // 當產品或匯率變化時計算總額
-  useEffect(() => {
-    calculateTotals()
-  }, [products, exchangeRate, summary.selectedPlatform, checkedIds, settingsVersion])
-
-  // 初始獲取匯率
+  // 同時取得匯率和後台規則，沒有即時匯率時才採用後台預設值。
   useEffect(() => {
     const initializeSettings = async () => {
       const [settingsResult, exchangeRateResult] = await Promise.allSettled([
@@ -114,11 +113,10 @@ export default function Home() {
         return
       }
 
-      const settings = settingsResult.value
-      if (!settings) return
-
-      setRemoteSettings((current) => ({ ...current, ...settings }))
-      setSettingsVersion((version) => version + 1)
+      const { settings = {}, rules } = settingsResult.value
+      if (rules?.categoryRules?.length) applyCategoryRules(rules.categoryRules)
+      if (rules?.shippingRules?.length) applyShippingRules(rules.shippingRules)
+      setRemoteSettings(settings)
 
       const hasLiveExchangeRate = exchangeRateResult.status === "fulfilled" && exchangeRateResult.value
       const defaultRate = Number(settings.defaultRate)
@@ -131,171 +129,18 @@ export default function Home() {
     setDarkMode(localStorage.getItem("darkMode") === "true")
   }, [])
 
-  // 當深色模式變化時更新localStorage
+  // 深色模式變更時，將偏好儲存在瀏覽器。
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode.toString())
   }, [darkMode])
 
-
-  // 新增商品時自動打勾
-  useEffect(() => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
-      products.forEach((p) => {
-        if (p.price > 0 && !next.has(p.id)) next.add(p.id)
-      })
-
-      const productIds = new Set(products.map((p) => p.id))
-      next.forEach((id) => {
-        if (!productIds.has(id)) next.delete(id)
-      })
-      return next
-    })
-  }, [products])
-
   const toggleCheck = (id: string) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev)
+    setExcludedIds((previous) => {
+      const next = new Set(previous)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
-
-  const calculateTotals = () => {
-    // 只計算勾選的商品
-    const filteredProducts = products.filter((p) => checkedIds.has(p.id))
-    let totalJPY = 0
-    let totalDomesticShippingJPY = 0
-    let totalInternationalShipping = 0
-
-    // 用於追踪已計算運費的店家和每家店的總金額
-    const processedStores = new Map<string, number>()
-    // 用於追蹤"其他"類別的商品，確保只計算一次國際運費
-    const hasOtherCategory = filteredProducts.some((product) => product.category === "other" && product.price > 0)
-
-    // 首先計算每家店的總金額
-    filteredProducts.forEach((product) => {
-      const productTotal = product.price * product.quantity
-      totalJPY += productTotal
-
-      // 累計每家店的總金額
-      if (product.price <= 0) return
-      const storeKey = getProductStoreKey(product)
-      processedStores.set(storeKey, (processedStores.get(storeKey) ?? 0) + productTotal)
-    })
-
-    // 根據每家店的總金額計算國內運費
-    processedStores.forEach((storeTotal, store) => {
-      const customFee = isCustomStoreKey(store) || store === "other"
-        ? filteredProducts.find((p) => getProductStoreKey(p) === store)?.customShippingFee
-        : undefined
-      totalDomesticShippingJPY += getDomesticShippingFee(store, storeTotal, customFee)
-    })
-
-    if (hasOtherCategory) totalInternationalShipping += 200
-
-    filteredProducts.forEach((product) => {
-      if (product.category === "other" || product.price <= 0) return
-      totalInternationalShipping += getCategoryInfo(product.category).fee * product.quantity
-    })
-
-    const totalTWD = totalJPY * exchangeRate
-    const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
-    const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
-    // 計算蝦皮價格，取20的倍數
-    // 蝦皮手續費預設 17.5%，小規模人營業稅 1%
-    // 小規模人營業稅1%
-    const shopeeRate = Number(remoteSettings.shopeeRate ?? 0.175)
-    const shopeeTaxRate = 0.01
-    const shopeeDenominator = Math.max(1 - shopeeRate - shopeeTaxRate, 0.01)
-    const shopeePrice = Math.ceil(grandTotal / shopeeDenominator / 20) * 20
-    const myshipPrice = Math.ceil(shopeePrice / (1 + shopeeRate))
-    // 反推 iopen 售價，使扣除金流手續費後的實收金額至少等於賣貨便價格。
-    const iopenFeeRate = 0.025
-    const platformPrices: PlatformPrices = {
-      shopee: shopeePrice,
-      myship: myshipPrice,
-      iopen: Math.ceil(myshipPrice / (1 - iopenFeeRate)),
-    }
-
-    // 計算每個商品的分攤價格
-    const newItemPrices = new Map<string, PlatformPrices>()
-
-    // 先算每個 store 的總金額，用來分攤國內運費
-    const storeTotalMap = new Map<string, number>()
-    filteredProducts.forEach((product) => {
-      if (product.price <= 0) return
-      const amt = product.price * product.quantity
-      const storeKey = getProductStoreKey(product)
-      storeTotalMap.set(storeKey, (storeTotalMap.get(storeKey) || 0) + amt)
-    })
-    // 計算「其他」類別商品的總數量，用來分攤 200 元固定運費
-    const otherCategoryProducts = filteredProducts.filter((p) => p.category === "other" && p.price > 0)
-    const totalOtherQuantity = otherCategoryProducts.reduce((sum, p) => sum + p.quantity, 0)
-
-    // 第一輪：計算每個商品的未進位小計（用來決定分攤比例）
-    const itemSubtotals = new Map<string, number>()
-    filteredProducts.forEach((product) => {
-      if (product.price <= 0) return
-
-      // 1. 商品成本（台幣）
-      const itemCostTWD = product.price * product.quantity * exchangeRate
-
-      // 2. 分攤國內運費（按該店的商品金額比例）
-      const storeKey = getProductStoreKey(product)
-      const storeTotal = storeTotalMap.get(storeKey) || 0
-      const storeCustomShippingFee = filteredProducts.find((p) => getProductStoreKey(p) === storeKey)?.customShippingFee
-      const storeDomesticShippingJPY = getDomesticShippingFee(storeKey, storeTotal, storeCustomShippingFee)
-      const itemStoreProportion = storeTotal > 0 ? (product.price * product.quantity) / storeTotal : 0
-      const itemDomesticShippingTWD = storeDomesticShippingJPY * exchangeRate * itemStoreProportion
-
-      // 3. 國際運費：「其他」類別固定 200 元依數量比例分攤，其他類別按件計算
-      let itemIntlShipping: number
-      if (product.category === "other") {
-        itemIntlShipping = totalOtherQuantity > 0 ? (200 * product.quantity) / totalOtherQuantity : 0
-      } else {
-        const intlShippingPerItem = getCategoryInfo(product.category).fee
-        itemIntlShipping = intlShippingPerItem * product.quantity
-      }
-
-      itemSubtotals.set(product.id, itemCostTWD + itemDomesticShippingTWD + itemIntlShipping)
-    })
-
-    // 第二輪：依各商品小計佔 grandTotal 的比例，從已進位的總價反推各商品售價
-    // 最後一件商品補足差額，確保加總 = 總價，消除進位誤差
-    const validProducts = filteredProducts.filter((p) => p.price > 0)
-    const remainingPrices = { ...platformPrices }
-    validProducts.forEach((product, idx) => {
-      if (idx === validProducts.length - 1) {
-        newItemPrices.set(product.id, remainingPrices)
-        return
-      }
-
-      const subtotal = itemSubtotals.get(product.id) ?? 0
-      const proportion = grandTotal > 0 ? subtotal / grandTotal : 0
-      const allocatedPrices: PlatformPrices = {
-        shopee: Math.round((platformPrices.shopee * proportion) / 20) * 20,
-        myship: Math.round(platformPrices.myship * proportion),
-        iopen: Math.min(remainingPrices.iopen, Math.round(platformPrices.iopen * proportion)),
-      }
-      remainingPrices.shopee -= allocatedPrices.shopee
-      remainingPrices.myship -= allocatedPrices.myship
-      remainingPrices.iopen -= allocatedPrices.iopen
-      newItemPrices.set(product.id, allocatedPrices)
-    })
-    setItemPrices(newItemPrices)
-
-    setSummary((prev) => ({
-      totalJPY,
-      totalTWD,
-      totalDomesticShippingJPY,
-      totalDomesticShippingTWD,
-      totalInternationalShipping,
-      platformPrices,
-      grandTotal,
-      selectedPlatform: prev.selectedPlatform,
-    }))
   }
 
   const handleAddProduct = () => {
@@ -303,7 +148,7 @@ export default function Home() {
     setProducts([
       ...products,
       {
-        id: Date.now().toString(),
+        id: createProductId(),
         url: "",
         color: "",
         store: lastProduct?.store || "free",
@@ -322,7 +167,9 @@ export default function Home() {
   }
 
   const handleRemoveProduct = (id: string) => {
-    if (products.length > 1) setProducts(products.filter((product) => product.id !== id))
+    if (products.length <= 1) return
+    setProducts(products.filter((product) => product.id !== id))
+    if (excludedIds.has(id)) toggleCheck(id)
   }
 
   const handleProductChange = (updatedProduct: ProductItem) => {
@@ -344,13 +191,6 @@ export default function Home() {
     }))
   }
 
-  const handlePlatformChange = (platform: OrderPlatform) => {
-    setSummary((prev) => ({
-      ...prev,
-      selectedPlatform: platform,
-    }))
-  }
-
   return (
     <ThemeProvider attribute="class" defaultTheme={darkMode ? "dark" : "light"}>
       <div className={`min-h-screen ${darkMode ? "dark" : ""}`}>
@@ -366,7 +206,7 @@ export default function Home() {
                 onRefresh={fetchExchangeRate}
                 onRateChange={setExchangeRate}
               />
-              <PlatformSelector selectedPlatform={summary.selectedPlatform} onPlatformChange={handlePlatformChange} />
+              <PlatformSelector selectedPlatform={selectedPlatform} onPlatformChange={setSelectedPlatform} />
               {/* 商品項目 */}
               <ProductForm
                 products={products}
@@ -378,12 +218,10 @@ export default function Home() {
               />
               <CalculationResult
                 products={products}
-                summary={summary}
+                quote={quote}
+                selectedPlatform={selectedPlatform}
                 exchangeRate={exchangeRate}
-                storeAmounts={getStoreAmounts(products.filter((product) => checkedIds.has(product.id)))}
-                checkedIds={checkedIds}
                 onToggleCheck={toggleCheck}
-                itemPrices={itemPrices}
               />
               {/* 複製傳送 */}
               <div className="rounded-lg border border-[var(--border-default)] bg-[var(--color-primary-light)] p-4 text-center shadow-[var(--shadow-soft)] lg:col-span-2 md:flex md:items-center md:justify-center md:gap-8">
@@ -426,23 +264,4 @@ export default function Home() {
       </div>
     </ThemeProvider>
   )
-
-  function getStoreAmounts(products: ProductItem[]): Map<string, number> {
-    const map = new Map<string, number>()
-    products.forEach((p) => {
-      if (p.price <= 0) return
-      const storeKey = getProductStoreKey(p)
-      map.set(storeKey, (map.get(storeKey) ?? 0) + p.price * p.quantity)
-    })
-    return map
-  }
-
-  function getProductStoreKey(product: ProductItem): string {
-    if (isCustomStoreKey(product.store)) return product.store
-    if (product.store === "other") {
-      const customStoreName = normalizeCustomStoreName(product.customStoreName || "")
-      return customStoreName ? getCustomStoreKey(customStoreName) : "other"
-    }
-    return product.store
-  }
 }

@@ -1,3 +1,5 @@
+import type { ProductItem } from "@/lib/types"
+
 export interface StoreConfig {
   key: string
   name: string
@@ -13,7 +15,7 @@ export const storeList: StoreConfig[] = [
   { key: "amavel", name: "Amavel", fee: 715, freeThreshold: 10000 },
   { key: "ACDC", name: "ACDC RAG", fee: 590, freeThreshold: 5500 },
   { key: "classicalElf", name: "Classical Elf", fee: 590, freeThreshold: 3980 },
-  { key: "canshop", name: "CAN SHOP", fee: 880, freeThreshold: 6000, label: "CAN SHOP (未滿¥6000｜880日幣｜滿額¥330)" },
+  { key: "canshop", name: "CAN SHOP", fee: 880, freeThreshold: 6000, specialRule: "canshop_330_after_threshold" },
   { key: "dotST", name: "dot-st", fee: 385, freeThreshold: 5000 },
   { key: "GRL", name: "GRL", fee: 0, freeThreshold: 0, label: "GRL (通常免運)" },
   { key: "INGNI", name: "INGNI", fee: 550, freeThreshold: 4900 },
@@ -34,6 +36,7 @@ export const storeList: StoreConfig[] = [
 
 function buildLabel(store: StoreConfig): string {
   if (store.label) return store.label
+  if (store.specialRule === "canshop_330_after_threshold") return `${store.name} (未滿¥${store.freeThreshold}｜${store.fee}日幣｜滿額¥330)`
   if (store.fee === 0) return store.name
   if (store.freeThreshold === Infinity) return `${store.name} (${store.fee} 日幣)`
   return `${store.name} (滿 ${store.freeThreshold} 免運，未滿 ${store.fee} 日幣)`
@@ -44,10 +47,11 @@ export const storeSelectOptions = storeList.map((store) => ({
   label: buildLabel(store),
 }))
 
-export const storeShippingConfig: Record<string, { fee: number; freeThreshold: number; specialRule?: string }> = Object.fromEntries([
-  ...storeList.map((store) => [store.key, { fee: store.fee, freeThreshold: store.freeThreshold }]),
-  ["default", { fee: 0, freeThreshold: Infinity }],
-])
+type ShippingRule = Pick<StoreConfig, "fee" | "freeThreshold" | "specialRule">
+
+export const storeShippingConfig: Record<string, ShippingRule> = Object.fromEntries(
+  storeList.map((store) => [store.key, store]),
+)
 
 export const storeNameMap: Record<string, string> = Object.fromEntries(storeList.map((store) => [store.key, store.name]))
 
@@ -66,20 +70,24 @@ export function isCustomStoreKey(store: string): boolean {
   return store.startsWith(CUSTOM_STORE_PREFIX)
 }
 
+export function getProductStoreKey(product: ProductItem): string {
+  return product.store === "other" ? getCustomStoreKey(product.customStoreName ?? "") : product.store
+}
+
 export function getStoreName(store: string, customStoreName?: string): string {
   if (isCustomStoreKey(store)) {
     const normalized = normalizeCustomStoreName(customStoreName || "")
     if (normalized) return normalized
     return decodeURIComponent(store.slice(CUSTOM_STORE_PREFIX.length))
   }
-  return storeNameMap[store] ?? storeNameMap.other
+  return storeNameMap[store] ?? storeNameMap.other ?? "其他"
 }
 
 /** 計算店家國內運費（日幣） */
-export function getDomesticShippingFee(store: string, storeTotal: number, customShippingFee?: number): number {
-  if (store === "other" || isCustomStoreKey(store)) return customShippingFee ?? 0
-  const config = storeShippingConfig[store] ?? storeShippingConfig.default
-  if (config.specialRule === "custom") return customShippingFee ?? 0
+export function getDomesticShippingFee(store: string, storeTotal: number, customShippingFee: number | undefined, rules: Readonly<Record<string, ShippingRule>>): number {
+  const config = rules[store]
+  if (store === "other" || isCustomStoreKey(store) || config?.specialRule === "custom") return customShippingFee ?? 0
+  if (!config) return 0
   if (config.specialRule === "canshop_330_after_threshold" && storeTotal >= config.freeThreshold) return 330
   return storeTotal >= config.freeThreshold ? 0 : config.fee
 }
@@ -119,7 +127,6 @@ export function applyShippingRules(rules: Array<{
       specialRule: store.specialRule,
     }
   })
-  storeShippingConfig.default = { fee: 0, freeThreshold: Infinity, specialRule: "none" }
 
   Object.keys(storeNameMap).forEach((key) => delete storeNameMap[key])
   storeList.forEach((store) => {

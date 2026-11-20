@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ProductItem as ProductItemType } from "@/lib/types"
-import { categoryMap } from "@/lib/categoryMap"
+import { categoryMap, getCategoryInfo } from "@/lib/categoryMap"
 import StoreSelector, { type CustomStoreOption } from "@/components/store-selector"
 import { getCustomStoreKey, isCustomStoreKey } from "@/lib/storeConfig"
 
@@ -125,7 +125,7 @@ export default function ProductItem({
                   inputMode="numeric"
                   placeholder="請輸入運費"
                   value={product.customShippingFee || ""}
-                  onChange={(e) => handleChange("customShippingFee", Number.parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleChange("customShippingFee", Math.max(0, Number.parseFloat(e.target.value) || 0))}
                   className={inputClass}
                 />
               </div>
@@ -144,7 +144,7 @@ export default function ProductItem({
                 min="0"
                 placeholder="物品價格"
                 value={product.price || ""}
-                onChange={(e) => handleChange("price", Number.parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleChange("price", Math.max(0, Number.parseFloat(e.target.value) || 0))}
                 className={inputClass}
               />
             </div>
@@ -189,6 +189,7 @@ export default function ProductItem({
                   {Object.entries(categoryMap).map(([key, { name }]) => (
                     <SelectItem key={key} value={key}>{name}</SelectItem>
                   ))}
+                  {!categoryMap.other && <SelectItem value="other">{getCategoryInfo("other").name}</SelectItem>}
                 </SelectContent>
               </Select>
             </div>

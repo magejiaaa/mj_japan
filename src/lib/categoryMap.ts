@@ -19,12 +19,13 @@ export const categoryMap: Record<string, CategoryInfo> = {
 
 const fallbackCategory: CategoryInfo = { weight: "1kg", fee: 200, name: "其他類別" }
 
-export function getCategoryInfo(category: string): CategoryInfo {
-  return categoryMap[category] || categoryMap.other || fallbackCategory
+export function getCategoryInfo(category: string, rules: Readonly<Record<string, CategoryInfo>> = categoryMap): CategoryInfo {
+  return rules[category] || rules.other || fallbackCategory
 }
 
 export function getCategoryKey(name: string): string | undefined {
   return Object.entries(categoryMap).find(([, value]) => value.name === name)?.[0]
+    ?? (name === fallbackCategory.name ? "other" : undefined)
 }
 
 export function applyCategoryRules(rules: Array<{
