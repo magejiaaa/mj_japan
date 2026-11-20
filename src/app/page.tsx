@@ -55,21 +55,35 @@ export default function Home() {
 
   const fetchExchangeRate = async (): Promise<boolean> => {
     try {
+      const taipeiDateParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Taipei",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date())
+      const { year, month, day } = Object.fromEntries(taipeiDateParts.map(({ type, value }) => [type, value]))
+      const endDate = `${year}-${month}-${day}`
+      // 含今天共五個日曆日，以 UTC 日期運算避免受瀏覽器時區影響。
+      const startDay = new Date(`${endDate}T00:00:00Z`)
+      startDay.setUTCDate(startDay.getUTCDate() - 4)
+      const startDate = startDay.toISOString().slice(0, 10)
+
       // FinMind 提供的匯率 API 端點
       const response = await fetch(
         "https://api.finmindtrade.com/api/v4/data?" +
           new URLSearchParams({
             dataset: "TaiwanExchangeRate",
             data_id: "JPY",
-            start_date: "2026-03-01",
+            start_date: startDate,
+            end_date: endDate,
           }),
       )
 
       if (!response.ok) throw new Error("Network response was not ok")
 
-      const data = await response.json()
-      if (data.data?.length > 0) {
-        const latestRate = data.data[data.data.length - 1]
+      const { data }: { data?: Array<{ date: string; cash_sell: number }> } = await response.json()
+      if (data?.length) {
+        const latestRate = data.reduce((latest, entry) => (entry.date >= latest.date ? entry : latest))
         const rate = Math.ceil(latestRate.cash_sell * 100) / 100
         setExchangeRate(rate)
         setLastUpdated(latestRate.date)
