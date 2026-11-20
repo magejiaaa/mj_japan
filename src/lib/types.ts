@@ -10,15 +10,18 @@ export interface ProductItem {
   customShippingFee?: number // 新增自定义运费字段
 }
 
+export type OrderPlatform = "shopee" | "myship" | "iopen"
+
+export type PlatformPrices = Record<OrderPlatform, number>
+
 export interface CalculationSummary {
   totalJPY: number
   totalTWD: number
   totalDomesticShippingJPY: number
   totalDomesticShippingTWD: number
   totalInternationalShipping: number
-  shopeePrice: number
-  otherPlatformPrice: number
+  platformPrices: PlatformPrices
   grandTotal: number
-  selectedPlatform: "shopee" | "iopen" | "myship"
+  selectedPlatform: OrderPlatform
 }
 

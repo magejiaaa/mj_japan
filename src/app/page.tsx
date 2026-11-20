@@ -11,7 +11,7 @@ import Footer from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import PlatformSelector from "@/components/platform-selector"
 import { ThemeProvider } from "@/components/theme-provider"
-import type { CalculationSummary, ProductItem } from "@/lib/types"
+import type { CalculationSummary, OrderPlatform, PlatformPrices, ProductItem } from "@/lib/types"
 import { getCustomStoreKey, getDomesticShippingFee, isCustomStoreKey, normalizeCustomStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 import { loadMjJapanSettings, type MjJapanRemoteSettings } from "@/lib/mjJapanSettings"
@@ -39,12 +39,11 @@ export default function Home() {
     totalDomesticShippingJPY: 0,
     totalDomesticShippingTWD: 0,
     totalInternationalShipping: 0,
-    shopeePrice: 0,
-    otherPlatformPrice: 0,
+    platformPrices: { shopee: 0, myship: 0, iopen: 0 },
     grandTotal: 0,
     selectedPlatform: "myship", // 默認賣貨便
   })
-  const [itemPrices, setItemPrices] = useState<Map<string, { shopeePrice: number; otherPrice: number }>>(new Map())
+  const [itemPrices, setItemPrices] = useState<Map<string, PlatformPrices>>(new Map())
   const [darkMode, setDarkMode] = useState<boolean>(false)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false)
   // 只計算勾選的價格(預設勾選)
@@ -197,11 +196,17 @@ export default function Home() {
     const shopeeTaxRate = 0.01
     const shopeeDenominator = Math.max(1 - shopeeRate - shopeeTaxRate, 0.01)
     const shopeePrice = Math.ceil(grandTotal / shopeeDenominator / 20) * 20
-    // 計算其他平台價格
-    const otherPlatformPrice = Math.ceil(shopeePrice / (1 + shopeeRate))
+    const myshipPrice = Math.ceil(shopeePrice / (1 + shopeeRate))
+    // 反推 iopen 售價，使扣除金流手續費後的實收金額至少等於賣貨便價格。
+    const iopenFeeRate = 0.025
+    const platformPrices: PlatformPrices = {
+      shopee: shopeePrice,
+      myship: myshipPrice,
+      iopen: Math.ceil(myshipPrice / (1 - iopenFeeRate)),
+    }
 
     // 計算每個商品的分攤價格
-    const newItemPrices = new Map<string, { shopeePrice: number; otherPrice: number }>()
+    const newItemPrices = new Map<string, PlatformPrices>()
 
     // 先算每個 store 的總金額，用來分攤國內運費
     const storeTotalMap = new Map<string, number>()
@@ -246,31 +251,24 @@ export default function Home() {
     // 第二輪：依各商品小計佔 grandTotal 的比例，從已進位的總價反推各商品售價
     // 最後一件商品補足差額，確保加總 = 總價，消除進位誤差
     const validProducts = filteredProducts.filter((p) => p.price > 0)
-    let remainingShopee = shopeePrice
-    let remainingOther = otherPlatformPrice
+    const remainingPrices = { ...platformPrices }
     validProducts.forEach((product, idx) => {
-      const subtotal = itemSubtotals.get(product.id) ?? 0
-      const isLast = idx === validProducts.length - 1
-
-      let itemShopeePrice: number
-      let itemOtherPrice: number
-
-      if (isLast) {
-        // 最後一件直接用剩餘差額，確保加總精確
-        itemShopeePrice = remainingShopee
-        itemOtherPrice = remainingOther
-      } else {
-        // 按比例分攤，取最近的 20 倍數（蝦皮）或整數（其他）
-        const proportion = grandTotal > 0 ? subtotal / grandTotal : 0
-        itemShopeePrice = Math.round((shopeePrice * proportion) / 20) * 20
-        itemOtherPrice = Math.round(otherPlatformPrice * proportion)
-        remainingShopee -= itemShopeePrice
-        remainingOther -= itemOtherPrice
+      if (idx === validProducts.length - 1) {
+        newItemPrices.set(product.id, remainingPrices)
+        return
       }
-      newItemPrices.set(product.id, {
-        shopeePrice: itemShopeePrice,
-        otherPrice: itemOtherPrice,
-      })
+
+      const subtotal = itemSubtotals.get(product.id) ?? 0
+      const proportion = grandTotal > 0 ? subtotal / grandTotal : 0
+      const allocatedPrices: PlatformPrices = {
+        shopee: Math.round((platformPrices.shopee * proportion) / 20) * 20,
+        myship: Math.round(platformPrices.myship * proportion),
+        iopen: Math.min(remainingPrices.iopen, Math.round(platformPrices.iopen * proportion)),
+      }
+      remainingPrices.shopee -= allocatedPrices.shopee
+      remainingPrices.myship -= allocatedPrices.myship
+      remainingPrices.iopen -= allocatedPrices.iopen
+      newItemPrices.set(product.id, allocatedPrices)
     })
     setItemPrices(newItemPrices)
 
@@ -280,8 +278,7 @@ export default function Home() {
       totalDomesticShippingJPY,
       totalDomesticShippingTWD,
       totalInternationalShipping,
-      shopeePrice,
-      otherPlatformPrice,
+      platformPrices,
       grandTotal,
       selectedPlatform: prev.selectedPlatform,
     }))
@@ -333,7 +330,7 @@ export default function Home() {
     }))
   }
 
-  const handlePlatformChange = (platform: "shopee" | "iopen" | "myship") => {
+  const handlePlatformChange = (platform: OrderPlatform) => {
     setSummary((prev) => ({
       ...prev,
       selectedPlatform: platform,

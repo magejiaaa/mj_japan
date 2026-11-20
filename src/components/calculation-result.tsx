@@ -5,7 +5,7 @@ import { Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { CalculationSummary, ProductItem } from "@/lib/types"
+import type { CalculationSummary, PlatformPrices, ProductItem } from "@/lib/types"
 import ShippingBreakdown from "@/components/shipping-breakdown"
 import {
   getCustomStoreKey,
@@ -23,9 +23,10 @@ interface CalculationResultProps {
   storeAmounts: Map<string, number>
   checkedIds: Set<string>
   onToggleCheck: (id: string) => void
-  itemPrices: Map<string, { shopeePrice: number; otherPrice: number }>
+  itemPrices: Map<string, PlatformPrices>
 }
 
+const platforms = ["shopee", "myship", "iopen"] as const
 const platformNameMap = {
   shopee: "蝦皮",
   myship: "賣貨便",
@@ -43,6 +44,8 @@ export default function CalculationResult({
 }: CalculationResultProps) {
   const [copied, setCopied] = useState(false)
   const checkedProducts = products.filter((product) => product.price > 0 && checkedIds.has(product.id))
+  const platformName = platformNameMap[summary.selectedPlatform]
+  const finalPrice = summary.platformPrices[summary.selectedPlatform]
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat("zh-TW", {
@@ -86,7 +89,7 @@ export default function CalculationResult({
     let otherCategoryProcessed = false
     let text = "===== 秘境日本代購估價資料 =====\n\n"
     text += `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣\n`
-    text += `下單平台: ${platformNameMap[summary.selectedPlatform]}\n\n`
+    text += `下單平台: ${platformName}\n\n`
     text += "商品:\n"
 
     checkedProducts.forEach((product, index) => {
@@ -106,11 +109,7 @@ export default function CalculationResult({
       // 加入分攤單品價格
       const priceInfo = itemPrices.get(product.id)
       if (priceInfo) {
-        if (summary.selectedPlatform === "shopee") {
-          text += `   【蝦皮單品價】: ${formatCurrency(priceInfo.shopeePrice, "TWD")}\n\n`
-        } else {
-          text += `   【賣貨便/iopen單品價】: ${formatCurrency(priceInfo.otherPrice, "TWD")}\n\n`
-        }
+        text += `   【${platformName}單品價】: ${formatCurrency(priceInfo[summary.selectedPlatform], "TWD")}\n\n`
       }
     })
 
@@ -118,15 +117,13 @@ export default function CalculationResult({
     text += `商品總額: ${formatCurrency(summary.totalJPY, "JPY")}\n`
     text += `日本國內運費: ${formatCurrency(summary.totalDomesticShippingJPY, "JPY")}\n`
     text += `國際運費: ${formatCurrency(summary.totalInternationalShipping, "TWD")}\n`
-    text += `平台總價: ${formatCurrency(summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice, "TWD")}\n`
+    text += `平台總價: ${formatCurrency(finalPrice, "TWD")}\n`
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
   }
-
-  const finalPrice = summary.selectedPlatform === "shopee" ? summary.shopeePrice : summary.otherPlatformPrice
 
   return (
     <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
@@ -144,8 +141,6 @@ export default function CalculationResult({
               const categoryInfo = getCategoryInfo(product.category)
               const storeName = getDisplayStoreName(product)
               const priceInfo = itemPrices.get(product.id)
-              const allocatedShopeePrice = priceInfo?.shopeePrice ?? 0
-              const allocatedOtherPrice = priceInfo?.otherPrice ?? 0
               const isChecked = checkedIds.has(product.id)
 
               return (
@@ -179,15 +174,13 @@ export default function CalculationResult({
                       </div>
 
                       {isChecked && (
-                        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-default)] pt-3 text-xs">
-                          <div className={summary.selectedPlatform === "shopee" ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
-                            <div>蝦皮估價：</div>
-                            <div>{formatCurrency(allocatedShopeePrice, "TWD")}</div>
-                          </div>
-                          <div className={["myship", "iopen"].includes(summary.selectedPlatform) ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
-                            <div>賣貨便、iopen 估價：</div>
-                            <div>{formatCurrency(allocatedOtherPrice, "TWD")}</div>
-                          </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--border-default)] pt-3 text-xs">
+                          {platforms.map((platform) => (
+                            <div key={platform} className={summary.selectedPlatform === platform ? "font-bold text-[var(--color-primary-hover)]" : "text-[var(--text-secondary)]"}>
+                              <div>{platformNameMap[platform]}估價：</div>
+                              <div>{formatCurrency(priceInfo?.[platform] ?? 0, "TWD")}</div>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -240,15 +233,19 @@ export default function CalculationResult({
               </div>
               <div className="flex justify-between gap-4 font-bold">
                 <span>蝦皮價值（含手續費）：</span>
-                <span>{formatCurrency(summary.shopeePrice, "TWD")}</span>
+                <span>{formatCurrency(summary.platformPrices.shopee, "TWD")}</span>
               </div>
               <div className="flex justify-between gap-4 text-base font-bold">
-                <span>賣貨便、iopen 下單費用：</span>
-                <span>{formatCurrency(summary.otherPlatformPrice, "TWD")}</span>
+                <span>賣貨便下單費用：</span>
+                <span>{formatCurrency(summary.platformPrices.myship, "TWD")}</span>
+              </div>
+              <div className="flex justify-between gap-4 text-base font-bold">
+                <span>iopen mall 下單費用（含手續費）：</span>
+                <span>{formatCurrency(summary.platformPrices.iopen, "TWD")}</span>
               </div>
               <div className="flex justify-between gap-4 pt-3 font-bold text-[var(--color-primary-hover)]">
                 <span>選擇下單平台：</span>
-                <span>{platformNameMap[summary.selectedPlatform]}</span>
+                <span>{platformName}</span>
               </div>
               <div className="flex justify-between gap-4 text-lg font-bold">
                 <span>應付金額：</span>

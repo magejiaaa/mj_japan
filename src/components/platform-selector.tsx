@@ -3,16 +3,17 @@
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { OrderPlatform } from "@/lib/types"
 
 interface PlatformSelectorProps {
-  selectedPlatform: "shopee" | "iopen" | "myship"
-  onPlatformChange: (platform: "shopee" | "iopen" | "myship") => void
+  selectedPlatform: OrderPlatform
+  onPlatformChange: (platform: OrderPlatform) => void
 }
 
 const platforms = [
   { value: "shopee", label: "蝦皮（手續費 17.5%）" },
   { value: "myship", label: "賣貨便（台灣運費 +$38）" },
-  { value: "iopen", label: "iopen mall（台灣運費 +$38｜可領免運券）" },
+  { value: "iopen", label: "iopen mall（手續費 2.5% 台灣運費 +$38｜可領免運券）" },
 ] as const
 
 export default function PlatformSelector({ selectedPlatform, onPlatformChange }: PlatformSelectorProps) {
@@ -24,7 +25,7 @@ export default function PlatformSelector({ selectedPlatform, onPlatformChange }:
       <CardContent>
         <RadioGroup
           value={selectedPlatform}
-          onValueChange={(value) => onPlatformChange(value as "shopee" | "iopen" | "myship")}
+          onValueChange={(value) => onPlatformChange(value as OrderPlatform)}
           className="space-y-4 pt-4"
         >
           {platforms.map((platform) => (
