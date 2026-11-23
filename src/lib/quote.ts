@@ -23,16 +23,21 @@ export const OTHER_CATEGORY_SHIPPING = 200
 export const SHOPEE_TAX_RATE = 0.01
 export const SHOPEE_PRICE_STEP = 20
 export const IOPEN_FEE_RATE = 0.025
+const DEFAULT_SHOPEE_RATE = 0.18
+const LEGACY_SHOPEE_RATE = 0.175
 
 /** 依勾選的商品與當前規則產生估價，供畫面和複製文字共用。 */
 export function calculateQuote(
   products: readonly ProductItem[],
   excludedIds: ReadonlySet<string>,
   exchangeRate: number,
-  shopeeRate: number,
+  configuredShopeeRate: number | undefined,
   categoryRules: NonNullable<Parameters<typeof getCategoryInfo>[1]>,
   shippingRules: Parameters<typeof getDomesticShippingFee>[3],
 ): Quote {
+  const configuredRate = Number(configuredShopeeRate ?? DEFAULT_SHOPEE_RATE)
+  // 舊版後台仍可能回傳原本的預設費率。
+  const shopeeRate = configuredRate === LEGACY_SHOPEE_RATE ? DEFAULT_SHOPEE_RATE : configuredRate
   const selectedProducts = products.filter(({ id, price }) => price > 0 && !excludedIds.has(id))
   const storeGroups = new Map<string, { total: number; firstProduct: ProductItem }>()
   let totalJPY = 0

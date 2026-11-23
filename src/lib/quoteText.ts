@@ -13,9 +13,14 @@ const currencyFormats = {
   JPY: new Intl.NumberFormat("zh-TW", { style: "currency", currency: "JPY", maximumFractionDigits: 0 }),
   TWD: new Intl.NumberFormat("zh-TW", { style: "currency", currency: "TWD", maximumFractionDigits: 0 }),
 }
+const percentFormat = new Intl.NumberFormat("zh-TW", { style: "percent", maximumFractionDigits: 4 })
 
 export function formatCurrency(amount: number, currency: keyof typeof currencyFormats): string {
   return currencyFormats[currency].format(amount)
+}
+
+export function formatPercent(rate: number): string {
+  return percentFormat.format(rate)
 }
 
 /** 直接使用估價結果產生可貼回網站的訂單文字。 */

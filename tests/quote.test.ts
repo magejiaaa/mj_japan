@@ -11,13 +11,13 @@ function product(id: string, fields: Partial<ProductItem> = {}): ProductItem {
 }
 
 function quote(products: ProductItem[], excludedIds = new Set<string>()) {
-  return calculateQuote(products, excludedIds, 0.23, 0.175, categoryMap, storeShippingConfig)
+  return calculateQuote(products, excludedIds, 0.23, undefined, categoryMap, storeShippingConfig)
 }
 
 test("allocated line prices are nonnegative and add up to each platform total", () => {
   const products = Array.from({ length: 16 }, (_, index) => product(String(index), { price: index === 15 ? 1 : 23 }))
   const { summary, items } = quote(products)
-  assert.deepEqual(summary.platformPrices, { shopee: 2080, myship: 1771, iopen: 1817 })
+  assert.deepEqual(summary.platformPrices, { shopee: 2080, myship: 1763, iopen: 1809 })
 
   const platforms: OrderPlatform[] = ["shopee", "myship", "iopen"]
   for (const platform of platforms) {
@@ -26,6 +26,19 @@ test("allocated line prices are nonnegative and add up to each platform total", 
     assert(amounts.every((amount) => amount >= 0 && amount % unit === 0))
     assert.equal(amounts.reduce((total, amount) => total + amount, 0), summary.platformPrices[platform])
   }
+})
+
+test("platform prices use 18% by default and when the backend sends its former 17.5% default", () => {
+  const products = [product("rounding-boundary", { price: 980 })]
+  for (const configuredRate of [undefined, 0.175, 0.18]) {
+    const result = calculateQuote(products, new Set(), 0.23, configuredRate, categoryMap, storeShippingConfig)
+    assert.equal(result.shopeeRate, 0.18)
+    assert.deepEqual(result.summary.platformPrices, { shopee: 420, myship: 356, iopen: 366 })
+  }
+
+  const custom = calculateQuote(products, new Set(), 0.23, 0.22, categoryMap, storeShippingConfig)
+  assert.equal(custom.shopeeRate, 0.22)
+  assert.deepEqual(custom.summary.platformPrices, { shopee: 440, myship: 361, iopen: 371 })
 })
 
 test("excluded products stay out of the quote and each store is charged once", () => {
@@ -57,7 +70,7 @@ test("fixed store rates apply to both products and domestic shipping in mixed qu
     product("can", { store: "canshop" }),
     product("regular", { store: "axesFemme" }),
   ]
-  const result = calculateQuote(products, new Set(), 0.20, 0.175, categoryMap, storeShippingConfig)
+  const result = calculateQuote(products, new Set(), 0.20, undefined, categoryMap, storeShippingConfig)
   assert.equal(result.summary.totalTWD, 660)
   assert.equal(Math.round(result.summary.totalDomesticShippingTWD * 100), 43620)
   assert.equal(result.stores.get("ZOZOTOWN")?.exchangeRate, 0.23)
@@ -70,7 +83,7 @@ test("fixed store rates apply to both products and domestic shipping in mixed qu
   assert.match(text, /匯率: 1 日幣 = 0\.20 台幣/)
   assert.deepEqual(parseQuoteProducts(text).map(({ store }) => store), ["ZOZOTOWN", "canshop", "axesFemme"])
 
-  const fixedOnly = calculateQuote(products, new Set(["regular"]), 0.20, 0.175, categoryMap, storeShippingConfig)
+  const fixedOnly = calculateQuote(products, new Set(["regular"]), 0.20, undefined, categoryMap, storeShippingConfig)
   assert.match(formatQuoteText(products, fixedOnly, "myship", 0.20), /^匯率: 1 日幣 = 0\.23 台幣$/m)
 })
 

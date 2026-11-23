@@ -50,8 +50,7 @@ export default function Home() {
   // 有價格的商品預設納入估價，只記錄手動取消勾選的項目。
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const quote = useMemo(() => {
-    const shopeeRate = Number(remoteSettings.shopeeRate ?? 0.175)
-    return calculateQuote(products, excludedIds, exchangeRate, shopeeRate, categoryMap, storeShippingConfig)
+    return calculateQuote(products, excludedIds, exchangeRate, remoteSettings.shopeeRate, categoryMap, storeShippingConfig)
   }, [products, excludedIds, exchangeRate, remoteSettings])
 
   useEffect(() => {
@@ -242,7 +241,11 @@ export default function Home() {
 
               <section id="quote" tabIndex={-1} aria-label="平台估價" className="order-2 scroll-mt-4 space-y-4 outline-none lg:contents lg:space-y-0">
                 <div className="lg:col-start-2 lg:row-start-1">
-                  <PlatformSelector selectedPlatform={selectedPlatform} onPlatformChange={setSelectedPlatform} />
+                  <PlatformSelector
+                    selectedPlatform={selectedPlatform}
+                    onPlatformChange={setSelectedPlatform}
+                    shopeeRate={quote.shopeeRate}
+                  />
                 </div>
                 <div className="lg:col-start-2 lg:row-start-2">
                   <CalculationResult

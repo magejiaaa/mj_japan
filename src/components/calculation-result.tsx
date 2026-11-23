@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea"
 import type { OrderPlatform, ProductItem } from "@/lib/types"
 import { IOPEN_FEE_RATE, OTHER_CATEGORY_SHIPPING, SHOPEE_PRICE_STEP, SHOPEE_TAX_RATE, type Quote } from "@/lib/quote"
-import { formatCurrency, formatQuoteText, platformNames } from "@/lib/quoteText"
+import { formatCurrency, formatPercent, formatQuoteText, platformNames } from "@/lib/quoteText"
 import ShippingBreakdown from "@/components/shipping-breakdown"
 import { FIXED_STORE_EXCHANGE_RATE, getProductStoreKey, getStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
@@ -27,10 +27,9 @@ interface CalculationResultProps {
 
 const platforms = ["shopee", "myship", "iopen"] as const
 const quoteAction = "bg-[var(--quote-action)] text-[var(--quote-action-text)] hover:bg-[var(--quote-action-hover)]"
-const percent = new Intl.NumberFormat("zh-TW", { style: "percent", maximumFractionDigits: 4 })
 
 function QuoteFormulaDialog({ shopeeRate }: { shopeeRate: number }) {
-  const shopeeFee = percent.format(shopeeRate)
+  const shopeeFee = formatPercent(shopeeRate)
 
   return (
     <Dialog>
@@ -64,7 +63,7 @@ function QuoteFormulaDialog({ shopeeRate }: { shopeeRate: number }) {
           <dl className="space-y-2">
             <div>
               <dt className="font-medium">蝦皮</dt>
-              <dd>成本 ÷（100% − 手續費 {shopeeFee} − 稅金 {percent.format(SHOPEE_TAX_RATE)}），再向上取到 NT${SHOPEE_PRICE_STEP} 的倍數。</dd>
+              <dd>成本 ÷（100% − 手續費 {shopeeFee} − 稅金 {formatPercent(SHOPEE_TAX_RATE)}），再向上取到 NT${SHOPEE_PRICE_STEP} 的倍數。</dd>
             </div>
             <div>
               <dt className="font-medium">賣貨便</dt>
@@ -72,7 +71,7 @@ function QuoteFormulaDialog({ shopeeRate }: { shopeeRate: number }) {
             </div>
             <div>
               <dt className="font-medium">iopen mall</dt>
-              <dd>賣貨便估價 ÷（100% − 金流手續費 {percent.format(IOPEN_FEE_RATE)}），再向上取整元。</dd>
+              <dd>賣貨便估價 ÷（100% − 金流手續費 {formatPercent(IOPEN_FEE_RATE)}），再向上取整元。</dd>
             </div>
           </dl>
           <p className="text-[var(--text-secondary)]">賣貨便和 iopen mall 的台灣運費 NT$38 於平台結帳另計。</p>
