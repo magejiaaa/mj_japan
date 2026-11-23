@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FIXED_STORE_EXCHANGE_RATE } from "@/lib/storeConfig"
 
 interface HeaderProps {
   toggleDarkMode: () => void
@@ -25,7 +26,7 @@ export default function Header({ toggleDarkMode, darkMode }: HeaderProps) {
       <p>同一商品也可以到樂天日本或 Amazon 找找看。</p>
     </>
   )
-  const storeRateNotice = "ZOZOTOWN、CAN ONLINE SHOP 的匯率請依 IG 或 Facebook 公告調整（目前 0.23）。"
+  const storeRateNotice = `ZOZOTOWN、CAN ONLINE SHOP 自動使用固定匯率 ${FIXED_STORE_EXCHANGE_RATE}。`
 
   return (
     <header className="px-4 pt-4 lg:pt-5">

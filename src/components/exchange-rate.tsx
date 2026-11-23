@@ -32,7 +32,7 @@ export default function ExchangeRate({ rate, lastUpdated, onRateChange }: Exchan
   return (
     <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] flex flex-col">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">當前匯率 JP</CardTitle>
+        <CardTitle className="text-lg">一般店家匯率（日圓）</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap items-center gap-3">

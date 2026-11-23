@@ -56,6 +56,7 @@ export const storeShippingConfig: Record<string, ShippingRule> = Object.fromEntr
 export const storeNameMap: Record<string, string> = Object.fromEntries(storeList.map((store) => [store.key, store.name]))
 
 export const CUSTOM_STORE_PREFIX = "custom:"
+export const FIXED_STORE_EXCHANGE_RATE = 0.23
 
 export function normalizeCustomStoreName(name: string): string {
   return name.trim().replace(/\s+/g, " ")
@@ -72,6 +73,11 @@ export function isCustomStoreKey(store: string): boolean {
 
 export function getProductStoreKey(product: ProductItem): string {
   return product.store === "other" ? getCustomStoreKey(product.customStoreName ?? "") : product.store
+}
+
+export function getFixedStoreExchangeRate(store: string): number | undefined {
+  const key = store.toLowerCase()
+  return key === "zozotown" || key === "canshop" ? FIXED_STORE_EXCHANGE_RATE : undefined
 }
 
 export function getStoreName(store: string, customStoreName?: string): string {

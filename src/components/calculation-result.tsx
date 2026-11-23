@@ -1,17 +1,17 @@
 "use client"
 
 import { useEffect, useRef, useState, type MouseEventHandler } from "react"
-import { Check, ChevronDown, Copy } from "lucide-react"
+import { Check, ChevronDown, Copy, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import type { OrderPlatform, ProductItem } from "@/lib/types"
-import type { Quote } from "@/lib/quote"
+import { IOPEN_FEE_RATE, OTHER_CATEGORY_SHIPPING, SHOPEE_PRICE_STEP, SHOPEE_TAX_RATE, type Quote } from "@/lib/quote"
 import { formatCurrency, formatQuoteText, platformNames } from "@/lib/quoteText"
 import ShippingBreakdown from "@/components/shipping-breakdown"
-import { getProductStoreKey, getStoreName } from "@/lib/storeConfig"
+import { FIXED_STORE_EXCHANGE_RATE, getProductStoreKey, getStoreName } from "@/lib/storeConfig"
 import { getCategoryInfo } from "@/lib/categoryMap"
 import QuoteSocialLinks from "@/components/quote-social-links"
 
@@ -27,6 +27,60 @@ interface CalculationResultProps {
 
 const platforms = ["shopee", "myship", "iopen"] as const
 const quoteAction = "bg-[var(--quote-action)] text-[var(--quote-action-text)] hover:bg-[var(--quote-action-hover)]"
+const percent = new Intl.NumberFormat("zh-TW", { style: "percent", maximumFractionDigits: 4 })
+
+function QuoteFormulaDialog({ shopeeRate }: { shopeeRate: number }) {
+  const shopeeFee = percent.format(shopeeRate)
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-11 shrink-0 px-2 text-xs text-[var(--quote-accent)] underline-offset-4 hover:bg-transparent hover:underline lg:h-8"
+        >
+          <HelpCircle aria-hidden="true" className="h-3.5 w-3.5" />
+          計算公式
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] overflow-y-auto rounded-lg bg-[var(--bg-card)] text-[var(--text-primary)]">
+        <DialogHeader className="pr-7 text-left">
+          <DialogTitle>計算公式</DialogTitle>
+          <DialogDescription>只計算已勾選且填了價格的商品。</DialogDescription>
+        </DialogHeader>
+        <section className="space-y-2 rounded-lg bg-[var(--color-primary-ultra-light)] p-4 text-sm leading-relaxed">
+          <h3 className="font-semibold">估價成本（台幣）</h3>
+          <p className="font-medium">商品金額 ＋ 日本國內運費 ＋ 國際運費</p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>商品金額＝日圓單價 × 數量 × 店家匯率。ZOZOTOWN 和 CAN SHOP 固定用 {FIXED_STORE_EXCHANGE_RATE}，其他店家使用一般匯率。</li>
+            <li>日本國內運費依各店小計和運費規則計算，同店只計一次，再以店家匯率換算。</li>
+            <li>國際運費依商品類別的每件費用乘上數量。「其他類別」的商品合計 NT${OTHER_CATEGORY_SHIPPING}。</li>
+          </ul>
+        </section>
+        <section className="space-y-2 text-sm leading-relaxed">
+          <h3 className="font-semibold">平台估價</h3>
+          <dl className="space-y-2">
+            <div>
+              <dt className="font-medium">蝦皮</dt>
+              <dd>成本 ÷（100% − 手續費 {shopeeFee} − 稅金 {percent.format(SHOPEE_TAX_RATE)}），再向上取到 NT${SHOPEE_PRICE_STEP} 的倍數。</dd>
+            </div>
+            <div>
+              <dt className="font-medium">賣貨便</dt>
+              <dd>蝦皮估價 ÷（100% ＋ {shopeeFee}），再向上取整元。</dd>
+            </div>
+            <div>
+              <dt className="font-medium">iopen mall</dt>
+              <dd>賣貨便估價 ÷（100% − 金流手續費 {percent.format(IOPEN_FEE_RATE)}），再向上取整元。</dd>
+            </div>
+          </dl>
+          <p className="text-[var(--text-secondary)]">賣貨便和 iopen mall 的台灣運費 NT$38 於平台結帳另計。</p>
+        </section>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function CalculationResult({
   products,
@@ -67,22 +121,29 @@ export default function CalculationResult({
   return (
     <>
       <Card className="border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
-        <CardHeader className="hidden pb-2 lg:flex">
-          <CardTitle className="text-xl">計算結果</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 p-4 lg:p-6 lg:pt-0">
-          <section className="rounded-lg bg-[var(--color-primary-ultra-light)] p-4 lg:hidden">
-            <h2 className="font-bold">平台估價</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">{platformName}</p>
-            {items.size > 0 ? (
-              <p className="my-2 break-all text-4xl font-bold tracking-tight text-[var(--quote-accent)]">{mobilePrice}</p>
-            ) : (
-              <p className="my-3 text-sm text-[var(--text-secondary)]">{hasPricedProducts ? "請勾選要估價的商品" : "填寫商品價格後，就會顯示估價"}</p>
-            )}
-            {selectedPlatform !== "myship" && <p className="text-sm text-[var(--text-secondary)]">{selectedPlatform === "iopen" ? "已含 2.5% 手續費" : "已含蝦皮手續費"}</p>}
-            {selectedPlatform !== "shopee" && (
-              <p className="mt-2 border-t border-[var(--border-default)] pt-2 text-sm">台灣運費 NT$38 於平台結帳另計{selectedPlatform === "iopen" && "，可用免運券"}</p>
-            )}
+        <CardContent className="space-y-5 p-4 lg:space-y-4 lg:p-6">
+          <section className="rounded-lg bg-[var(--color-primary-ultra-light)] p-4 lg:bg-transparent lg:p-0">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-bold lg:text-xl lg:font-semibold">
+                  <span className="lg:hidden">平台估價</span>
+                  <span className="hidden lg:inline">計算結果</span>
+                </h2>
+                <p className="mt-1 text-sm text-[var(--text-secondary)] lg:hidden">{platformName}</p>
+              </div>
+              <QuoteFormulaDialog shopeeRate={quote.shopeeRate} />
+            </div>
+            <div className="lg:hidden">
+              {items.size > 0 ? (
+                <p className="my-2 break-all text-4xl font-bold tracking-tight text-[var(--quote-accent)]">{mobilePrice}</p>
+              ) : (
+                <p className="my-3 text-sm text-[var(--text-secondary)]">{hasPricedProducts ? "請勾選要估價的商品" : "填寫商品價格後，就會顯示估價"}</p>
+              )}
+              {selectedPlatform !== "myship" && <p className="text-sm text-[var(--text-secondary)]">{selectedPlatform === "iopen" ? "已含 2.5% 手續費" : "已含蝦皮手續費"}</p>}
+              {selectedPlatform !== "shopee" && (
+                <p className="mt-2 border-t border-[var(--border-default)] pt-2 text-sm">台灣運費 NT$38 於平台結帳另計{selectedPlatform === "iopen" && "，可用免運券"}</p>
+              )}
+            </div>
           </section>
           <div className="space-y-5 lg:space-y-6">
             <section className="space-y-3">

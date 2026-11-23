@@ -1,11 +1,12 @@
 import { getCategoryInfo } from "@/lib/categoryMap"
-import { getDomesticShippingFee, getProductStoreKey, isCustomStoreKey } from "@/lib/storeConfig"
+import { getDomesticShippingFee, getFixedStoreExchangeRate, getProductStoreKey, isCustomStoreKey } from "@/lib/storeConfig"
 import type { CalculationSummary, PlatformPrices, ProductItem } from "@/lib/types"
 
 type StoreQuote = {
   store: string
   customStoreName?: string
   storeTotal: number
+  exchangeRate: number
   domesticShippingJPY: number
   domesticShippingTWD: number
   isCustomShipping: boolean
@@ -13,11 +14,15 @@ type StoreQuote = {
 
 export type Quote = {
   summary: CalculationSummary
+  shopeeRate: number
   stores: Map<string, StoreQuote>
   items: Map<string, { store: string; internationalShipping: number; prices: PlatformPrices }>
 }
 
-const OTHER_CATEGORY_SHIPPING = 200
+export const OTHER_CATEGORY_SHIPPING = 200
+export const SHOPEE_TAX_RATE = 0.01
+export const SHOPEE_PRICE_STEP = 20
+export const IOPEN_FEE_RATE = 0.025
 
 /** 依勾選的商品與當前規則產生估價，供畫面和複製文字共用。 */
 export function calculateQuote(
@@ -47,17 +52,24 @@ export function calculateQuote(
   })
 
   const stores: Quote["stores"] = new Map()
+  let totalTWD = 0
   let totalDomesticShippingJPY = 0
+  let totalDomesticShippingTWD = 0
   for (const [store, { total, firstProduct }] of storeGroups) {
     // 自訂運費採用該店第一筆勾選商品的設定，同店只計一次。
     const domesticShippingJPY = getDomesticShippingFee(store, total, firstProduct.customShippingFee, shippingRules)
+    const storeRate = getFixedStoreExchangeRate(store) ?? exchangeRate
+    const domesticShippingTWD = domesticShippingJPY * storeRate
+    totalTWD += total * storeRate
     totalDomesticShippingJPY += domesticShippingJPY
+    totalDomesticShippingTWD += domesticShippingTWD
     stores.set(store, {
       store,
       customStoreName: firstProduct.customStoreName,
       storeTotal: total,
+      exchangeRate: storeRate,
       domesticShippingJPY,
-      domesticShippingTWD: domesticShippingJPY * exchangeRate,
+      domesticShippingTWD,
       isCustomShipping: store === "other" || isCustomStoreKey(store) || shippingRules[store]?.specialRule === "custom",
     })
   }
@@ -78,22 +90,18 @@ export function calculateQuote(
       internationalShipping = getCategoryInfo(product.category, categoryRules).fee * product.quantity
     }
     totalInternationalShipping += internationalShipping
-    return { id: product.id, store, internationalShipping, cost: amountJPY * exchangeRate + domesticShare + internationalShipping }
+    return { id: product.id, store, internationalShipping, cost: amountJPY * storeQuote.exchangeRate + domesticShare + internationalShipping }
   })
 
-  const totalTWD = totalJPY * exchangeRate
-  const totalDomesticShippingTWD = totalDomesticShippingJPY * exchangeRate
   const grandTotal = totalTWD + totalDomesticShippingTWD + totalInternationalShipping
 
   // 平台報價依序沿用蝦皮與賣貨便公式，再從賣貨便報價反推含金流手續費的 iopen mall 報價。
-  const shopeeTaxRate = 0.01
-  const iopenFeeRate = 0.025
-  const shopeePrice = Math.ceil(grandTotal / Math.max(1 - shopeeRate - shopeeTaxRate, 0.01) / 20) * 20
+  const shopeePrice = Math.ceil(grandTotal / Math.max(1 - shopeeRate - SHOPEE_TAX_RATE, 0.01) / SHOPEE_PRICE_STEP) * SHOPEE_PRICE_STEP
   const myshipPrice = Math.ceil(shopeePrice / (1 + shopeeRate))
   const platformPrices = {
     shopee: shopeePrice,
     myship: myshipPrice,
-    iopen: Math.ceil(myshipPrice / (1 - iopenFeeRate)),
+    iopen: Math.ceil(myshipPrice / (1 - IOPEN_FEE_RATE)),
   }
 
   const items: Quote["items"] = new Map()
@@ -104,7 +112,7 @@ export function calculateQuote(
     const share = grandTotal > 0 ? Math.min(cumulativeCost / grandTotal, 1) : 0
     // 累計金額先四捨五入，再扣除已分配的金額，避免最後一件分到負數。
     const target = index === itemCosts.length - 1 ? platformPrices : {
-      shopee: Math.round(platformPrices.shopee / 20 * share) * 20,
+      shopee: Math.round(platformPrices.shopee / SHOPEE_PRICE_STEP * share) * SHOPEE_PRICE_STEP,
       myship: Math.round(platformPrices.myship * share),
       iopen: Math.round(platformPrices.iopen * share),
     }
@@ -122,6 +130,7 @@ export function calculateQuote(
 
   return {
     summary: { totalJPY, totalTWD, totalDomesticShippingJPY, totalDomesticShippingTWD, totalInternationalShipping, platformPrices, grandTotal },
+    shopeeRate,
     stores,
     items,
   }

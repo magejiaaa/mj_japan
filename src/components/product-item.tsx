@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { ProductItem as ProductItemType } from "@/lib/types"
 import { categoryMap, getCategoryInfo } from "@/lib/categoryMap"
 import StoreSelector, { type CustomStoreOption } from "@/components/store-selector"
-import { getCustomStoreKey, isCustomStoreKey } from "@/lib/storeConfig"
+import { getCustomStoreKey, getFixedStoreExchangeRate, isCustomStoreKey } from "@/lib/storeConfig"
 
 interface ProductItemProps {
   product: ProductItemType
@@ -57,6 +57,8 @@ export default function ProductItem({
     })
   }
 
+  const fixedRate = getFixedStoreExchangeRate(product.store)
+
   return (
     <article className="overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] lg:bg-[var(--color-primary-ultra-light)]">
       <div className="flex min-h-11 items-center justify-between gap-2 bg-[var(--color-primary-light)] px-4 text-[var(--quote-accent)]">
@@ -79,6 +81,9 @@ export default function ProductItem({
             onChange={handleStoreChange}
             customStoreOptions={customStoreOptions}
           />
+          {fixedRate !== undefined && (
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">此店固定匯率：1 日幣 = {fixedRate.toFixed(2)} 台幣</p>
+          )}
         </div>
 
         {isCustomStore && (

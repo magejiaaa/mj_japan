@@ -22,9 +22,12 @@ export function formatCurrency(amount: number, currency: keyof typeof currencyFo
 export function formatQuoteText(products: readonly ProductItem[], quote: Quote, platform: OrderPlatform, exchangeRate: number): string {
   const platformName = platformNames[platform]
   const { summary, items, stores } = quote
+  const rates = new Set(Array.from(stores.values(), (store) => store.exchangeRate))
+  const hasMixedRates = rates.size > 1
+  const rate = rates.values().next().value ?? exchangeRate
   const lines = [
     "===== 秘境日本代購估價資料 =====", "",
-    `匯率: 1 日幣 = ${exchangeRate.toFixed(2)} 台幣`,
+    hasMixedRates ? "匯率: 依各商品所列匯率換算" : `匯率: 1 日幣 = ${rate.toFixed(2)} 台幣`,
     `下單平台: ${platformName}`, "", "商品:",
   ]
   let index = 0
@@ -40,6 +43,7 @@ export function formatQuoteText(products: readonly ProductItem[], quote: Quote, 
       `   顏色尺寸: ${product.color || "-"}`,
       `   類別: ${category.name} ${formatCurrency(item.internationalShipping, "TWD")} (${category.weight}/件)`,
     )
+    if (hasMixedRates) lines.push(`   匯率: 1 日幣 = ${store.exchangeRate.toFixed(2)} 台幣`)
     if (store.isCustomShipping) lines.push(`   日本國內運費: ${formatCurrency(store.domesticShippingJPY, "JPY")}`)
     lines.push(`   【${platformName}單品價】: ${formatCurrency(item.prices[platform], "TWD")}`, "")
   }

@@ -51,6 +51,29 @@ test("CAN SHOP applies its reduced fallback shipping fee from ¥6000", () => {
   assert.equal(quote([product("at", { store: "canshop", price: 6000 })]).summary.totalDomesticShippingJPY, 330)
 })
 
+test("fixed store rates apply to both products and domestic shipping in mixed quotes", () => {
+  const products = [
+    product("zozo", { store: "ZOZOTOWN" }),
+    product("can", { store: "canshop" }),
+    product("regular", { store: "axesFemme" }),
+  ]
+  const result = calculateQuote(products, new Set(), 0.20, 0.175, categoryMap, storeShippingConfig)
+  assert.equal(result.summary.totalTWD, 660)
+  assert.equal(Math.round(result.summary.totalDomesticShippingTWD * 100), 43620)
+  assert.equal(result.stores.get("ZOZOTOWN")?.exchangeRate, 0.23)
+  assert.equal(result.stores.get("canshop")?.exchangeRate, 0.23)
+  assert.equal(result.stores.get("axesFemme")?.exchangeRate, 0.20)
+
+  const text = formatQuoteText(products, result, "myship", 0.20)
+  assert.match(text, /匯率: 依各商品所列匯率換算/)
+  assert.equal(text.match(/匯率: 1 日幣 = 0\.23 台幣/g)?.length, 2)
+  assert.match(text, /匯率: 1 日幣 = 0\.20 台幣/)
+  assert.deepEqual(parseQuoteProducts(text).map(({ store }) => store), ["ZOZOTOWN", "canshop", "axesFemme"])
+
+  const fixedOnly = calculateQuote(products, new Set(["regular"]), 0.20, 0.175, categoryMap, storeShippingConfig)
+  assert.match(formatQuoteText(products, fixedOnly, "myship", 0.20), /^匯率: 1 日幣 = 0\.23 台幣$/m)
+})
+
 test("export and import preserve the other category, quantities and custom shipping", () => {
   const store = getCustomStoreKey("測試店家")
   const products = [
